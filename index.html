@@ -227,27 +227,35 @@ tr:hover td{background:rgba(255,255,255,0.02)}
   <div class="dash-card"><div class="num" id="d-progress">0%</div><div class="lbl">Progreso</div></div>
 </div>
 
-<h2>Metricas Globales (Simulado / Agregado)</h2>
+<h2>Tu Desempeno</h2>
 <div class="card">
   <div class="dash-grid">
-    <div class="dash-card"><div class="num" style="color:var(--m2)">68%</div><div class="lbl">Tasa Finalizacion</div></div>
-    <div class="dash-card"><div class="num" style="color:var(--m3)">7.4</div><div class="lbl">Promedio Notas /10</div></div>
-    <div class="dash-card"><div class="num" style="color:var(--m4)">12</div><div class="lbl">Paises Activos</div></div>
-    <div class="dash-card"><div class="num" style="color:var(--m1)">3h 12m</div><div class="lbl">Tiempo Medio</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m2)" id="d-score">--</div><div class="lbl">Promedio Aciertos</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m3)" id="d-mc">--</div><div class="lbl">MC Acertados</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m4)" id="d-dev">--</div><div class="lbl">Desarrollo Aceptados</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m1)" id="d-done">--</div><div class="lbl">Completados /40</div></div>
   </div>
-  <h3 style="margin-top:18px">Distribucion por Pais</h3>
-  <div id="country-list" style="margin-top:10px"></div>
-  <p style="font-size:12px;color:#666;margin-top:10px">Nota: en produccion estos datos se sincronizan desde el endpoint. Actualmente se muestran datos de muestra representativos.</p>
 </div>
 
 <h2>Progreso por Modulo</h2>
 <div class="card">
   <div class="bar-chart" id="mod-bars">
-    <div class="bar" style="height:20%"><span>M1</span></div>
-    <div class="bar" style="height:40%"><span>M2</span></div>
-    <div class="bar" style="height:35%"><span>M3</span></div>
-    <div class="bar" style="height:55%"><span>M4</span></div>
+    <div class="bar" id="bar-m1" style="height:0%"><span>M1</span></div>
+    <div class="bar" id="bar-m2" style="height:0%"><span>M2</span></div>
+    <div class="bar" id="bar-m3" style="height:0%"><span>M3</span></div>
+    <div class="bar" id="bar-m4" style="height:0%"><span>M4</span></div>
   </div>
+</div>
+
+<h2>Datos Enviados al Endpoint</h2>
+<div class="card">
+  <div class="dash-grid">
+    <div class="dash-card"><div class="num" style="color:var(--m1)" id="d-sync">Pendiente</div><div class="lbl">Estado Sync</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m4)" id="d-visits">--</div><div class="lbl">Visitas (esta sesion)</div></div>
+  </div>
+  <h3 style="margin-top:18px">Tu Pais Detectado</h3>
+  <div id="country-list" style="margin-top:10px"></div>
+  <p style="font-size:12px;color:#666;margin-top:10px">Nota: los datos agregados globales (todos los usuarios) requieren que el endpoint de Google Apps Script devuelva datos via GET. Los valores mostrados arriba son tus datos reales locales.</p>
 </div>
 </section>
 
@@ -599,11 +607,21 @@ tickTmr = setInterval(tick, 5000);
 function updateDashTime(){ const el=document.getElementById('d-time'); if(!el) return; const m=Math.floor(state.time/60), s=state.time%60; el.textContent = m+'m '+s+'s'; }
 
 // Cloud Sync
+let syncStatus = 'Pendiente';
 function saveToCloud(data){
   const payload = Object.assign({}, data, {t:new Date().toISOString(),ip:ipInfo.ip,country:ipInfo.country,timeTotal:state.time});
   const body = JSON.stringify(payload);
-  fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'cors'}).catch(()=>{
-    fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'no-cors'}).catch(()=>{});
+  fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'cors'}).then(()=>{
+    syncStatus = 'Enviado ✓';
+    const el = document.getElementById('d-sync'); if(el){ el.textContent = syncStatus; el.style.color = 'var(--ok)'; }
+  }).catch(()=>{
+    fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'no-cors'}).then(()=>{
+      syncStatus = 'Enviado ✓';
+      const el = document.getElementById('d-sync'); if(el){ el.textContent = syncStatus; el.style.color = 'var(--ok)'; }
+    }).catch(()=>{
+      syncStatus = 'Fallo ✕';
+      const el = document.getElementById('d-sync'); if(el){ el.textContent = syncStatus; el.style.color = 'var(--err)'; }
+    });
   });
 }
 window.saveDataToCloud = saveToCloud;
@@ -619,17 +637,49 @@ window.navigate = function(id){
   if(window.MathJax && window.MathJax.typesetPromise){ try{ window.MathJax.typesetPromise([target]); }catch(e){} }
 };
 
-// Dashboard
+// Dashboard - ALL REAL DATA
 function renderDashboard(){
   updateDashIP(); updateDashTime();
   const prog = computeProgress();
   const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+
+  // Real performance metrics from localStorage
+  let totalMC=0, correctMC=0, totalDev=0, correctDev=0, totalDone=0;
+  Object.keys(QUIZ_DATA).forEach(k=>{
+    QUIZ_DATA[k].forEach((q,i)=>{
+      const s = state.quizzes[k+'_'+i] || {};
+      if(s.answered){
+        totalDone++;
+        if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
+        else { totalDev++; if(s.correct) correctDev++; }
+      }
+    });
+  });
+  const totalAnswered = totalMC + totalDev;
+  const score = totalAnswered ? Math.round((correctMC+correctDev)/totalAnswered*10)/10 : '--';
+  const els = document.getElementById('d-score'); if(els) els.textContent = score==='--'?score:score+'/10';
+  const elmc = document.getElementById('d-mc'); if(elmc) elmc.textContent = correctMC+'/'+totalMC;
+  const eldv = document.getElementById('d-dev'); if(eldv) eldv.textContent = correctDev+'/'+totalDev;
+  const eldn = document.getElementById('d-done'); if(eldn) eldn.textContent = totalDone+'/40';
+
+  // Real per-module progress bars
+  ['mod1','mod2','mod3','mod4'].forEach((m,idx)=>{
+    const total = QUIZ_DATA[m].length;
+    let done = 0;
+    QUIZ_DATA[m].forEach((_,i)=>{ if((state.quizzes[m+'_'+i]||{}).answered) done++; });
+    const pct = total ? Math.round(done/total*100) : 0;
+    const bar = document.getElementById('bar-'+m);
+    if(bar) bar.style.height = pct+'%';
+  });
+
+  // Real country + visits
   const list = document.getElementById('country-list');
-  if(list && !list.dataset.rendered){
-    const countries=[{n:'Costa Rica',f:'🇨🇷',v:28},{n:'Guatemala',f:'🇬🇹',v:22},{n:'El Salvador',f:'🇸🇻',v:18},{n:'Honduras',f:'🇭🇳',v:14},{n:'Nicaragua',f:'🇳🇮',v:12},{n:'Panama',f:'🇵🇦',v:10},{n:'Mexico',f:'🇲🇽',v:16},{n:'Colombia',f:'🇨🇴',v:14},{n:'Chile',f:'🇨🇱',v:11},{n:'Peru',f:'🇵🇪',v:9},{n:'Argentina',f:'🇦🇷',v:8},{n:'Espana',f:'🇪🇸',v:7}];
-    list.innerHTML = countries.map(c=>'<div class="country-row"><span>'+c.f+' '+c.n+'</span><div class="bar-mini" style="width:'+c.v+'%"></div><span>'+c.v+'%</span></div>').join('');
-    list.dataset.rendered = '1';
+  if(list){
+    const flagMap = {'Costa Rica':'🇨🇷','Guatemala':'🇬🇹','El Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Panama':'🇵🇦','Mexico':'🇲🇽','Colombia':'🇨🇴','Chile':'🇨🇱','Peru':'🇵🇪','Argentina':'🇦🇷','Espana':'🇪🇸','Spain':'🇪🇸','United States':'🇺🇸','Estados Unidos':'🇺🇸'};
+    const f = flagMap[ipInfo.country] || '🌐';
+    list.innerHTML = '<div class="country-row"><span>'+f+' '+escapeHtml(ipInfo.country)+'</span><div class="bar-mini" style="width:100%"></div><span>Tu ubicacion</span></div>';
   }
+  const elv = document.getElementById('d-visits'); if(elv) elv.textContent = state.visits || 1;
 }
 function computeProgress(){
   let total=0, done=0;
