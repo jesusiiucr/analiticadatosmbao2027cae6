@@ -222,7 +222,6 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 
 <h2>Tu Sesion</h2>
 <div class="dash-grid">
-  <div class="dash-card"><div class="num" id="d-ip">--</div><div class="lbl">IP Detectada</div></div>
   <div class="dash-card"><div class="num" id="d-country">--</div><div class="lbl">Pais</div></div>
   <div class="dash-card"><div class="num" id="d-time">0s</div><div class="lbl">Tiempo Activo</div></div>
   <div class="dash-card"><div class="num" id="d-progress">0%</div><div class="lbl">Progreso</div></div>
@@ -585,7 +584,7 @@ state.visits++;
 function persist(){ localStorage.setItem('ad_state', JSON.stringify(state)); }
 persist();
 
-// IP Tracking — XMLHttpRequest primero (mas confiable que fetch para CORS mixtos)
+// IP Tracking — Cloudflare trace primario (nunca bloqueado por adblockers)
 let ipInfo = {ip:'Detectando...',country:'Detectando...'};
 const CC2NAME = {'CR':'Costa Rica','GT':'Guatemala','SV':'El Salvador','HN':'Honduras','NI':'Nicaragua','PA':'Panama','MX':'Mexico','CO':'Colombia','CL':'Chile','PE':'Peru','AR':'Argentina','ES':'Espana','US':'Estados Unidos','CA':'Canada','BR':'Brasil','EC':'Ecuador','UY':'Uruguay','PY':'Paraguay','BO':'Bolivia','CU':'Cuba','DO':'Republica Dominicana','VE':'Venezuela','PR':'Puerto Rico','FR':'Francia','DE':'Alemania','IT':'Italia','PT':'Portugal','GB':'Reino Unido','NL':'Paises Bajos','BE':'Belgica','CH':'Suiza','AT':'Austria','CN':'China','JP':'Japon','KR':'Corea del Sur','IN':'India','AU':'Australia','RU':'Rusia','ZA':'Sudafrica','NG':'Nigeria','KE':'Kenya','IL':'Israel','AE':'Emiratos Arabes','SA':'Arabia Saudita','SG':'Singapur','MY':'Malasia','TH':'Tailandia','ID':'Indonesia','PH':'Filipinas','VN':'Vietnam','TW':'Taiwan','HK':'Hong Kong','SE':'Suecia','NO':'Noruega','DK':'Dinamarca','FI':'Finlandia','PL':'Polonia','CZ':'Republica Checa','HU':'Hungria','RO':'Rumania','BG':'Bulgaria','HR':'Croacia','SI':'Eslovenia','SK':'Eslovaquia','LT':'Lituania','LV':'Letonia','EE':'Estonia','IE':'Irlanda','IS':'Islandia','NZ':'Nueva Zelanda','GR':'Grecia','TR':'Turquia'};
 function setIP(ip,country){
@@ -593,47 +592,44 @@ function setIP(ip,country){
   updateDashIP();
   saveToCloud({event:'visit',ip:ipInfo.ip,country:ipInfo.country,ua:navigator.userAgent});
 }
-function resolveCountry(d){
-  if(d.country_name) return d.country_name;
-  if(d.country && d.country.length>2) return d.country;
-  if(d.country && CC2NAME[d.country]) return CC2NAME[d.country];
-  if(d.country) return d.country;
-  return 'Desconocido';
+function parseCF(txt){
+  var ip=txt.match(/ip=([^\n]+)/); ip=ip?ip[1].trim():null;
+  var loc=txt.match(/loc=([^\n]+)/); loc=loc?loc[1].trim():null;
+  return {ip:ip,country:loc?CC2NAME[loc]||loc:'No identificado'};
 }
-function tryXHR(url, parser, onErr){
+function tryXHR(url, isText, parser, onErr){
   try{
-    var xhr = new XMLHttpRequest();
+    var xhr=new XMLHttpRequest();
     xhr.open('GET',url,true);
-    xhr.onreadystatechange = function(){
+    xhr.onreadystatechange=function(){
       if(xhr.readyState===4){
         if(xhr.status===200){
-          try{ var d = JSON.parse(xhr.responseText); parser(d); }catch(e){ onErr(); }
+          try{ parser(xhr.responseText); }catch(e){ onErr(); }
         } else { onErr(); }
       }
     };
-    xhr.onerror = onErr;
-    xhr.ontimeout = onErr;
-    xhr.timeout = 8000;
-    xhr.send();
+    xhr.onerror=onErr; xhr.ontimeout=onErr; xhr.timeout=10000; xhr.send();
   }catch(e){ onErr(); }
 }
-// Intento 1: ipinfo.io via XHR (CORS mas permisivo)
-tryXHR('https://ipinfo.io/json', function(d){
-  if(d.ip) setIP(d.ip,resolveCountry(d));
-  else throw new Error('no ip');
-}, function(){
-  // Intento 2: ipapi.co via XHR
-  tryXHR('https://ipapi.co/json/', function(d){
-    if(d.ip && !d.error) setIP(d.ip,resolveCountry(d));
-    else throw new Error('ipapi failed');
+// Intento 1: Cloudflare trace (texto plano, nunca bloqueado por adblockers)
+tryXHR('https://www.cloudflare.com/cdn-cgi/trace', true, function(txt){
+  var d=parseCF(txt); if(d.ip) setIP(d.ip,d.country); else onErrCF();
+}, function onErrCF(){
+  // Intento 2: reallyfreegeoip (JSON poco conocido, rara vez bloqueado)
+  tryXHR('https://reallyfreegeoip.org/json/', false, function(txt){
+    var d=JSON.parse(txt); if(d.ip) setIP(d.ip,CC2NAME[d.country_code]||d.country_name||'No identificado'); else throw new Error('rf');
   }, function(){
-    // Intento 3: ipify via fetch (solo IP)
-    fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
-      if(d.ip) setIP(d.ip,'No identificado');
-      else throw new Error('ipify failed');
-    }).catch(function(){
-      ipInfo = {ip:'No disponible',country:'No disponible'};
-      updateDashIP();
+    // Intento 3: Amazon checkip (solo IP)
+    tryXHR('https://checkip.amazonaws.com/', true, function(txt){
+      var ip=txt.trim(); if(ip) setIP(ip,'No identificado'); else throw new Error('aws');
+    }, function(){
+      // Intento 4: httpbin (testeado en muchos entornos)
+      tryXHR('https://httpbin.org/ip', false, function(txt){
+        var d=JSON.parse(txt); if(d.origin) setIP(d.origin.split(',')[0].trim(),'No identificado'); else throw new Error('hb');
+      }, function(){
+        ipInfo={ip:'Bloqueado por navegador',country:'Bloqueado por navegador'};
+        updateDashIP();
+      });
     });
   });
 });
