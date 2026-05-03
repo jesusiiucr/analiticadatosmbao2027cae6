@@ -756,21 +756,42 @@ function renderDashboard(){
   const prog = computeProgress();
   const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
 
-  // Real performance metrics from localStorage (only selected questions)
+  // Real performance metrics from localStorage (deduplicated across quizSet changes)
   let totalMC=0, correctMC=0, totalDev=0, correctDev=0, totalDone=0;
+  const countedDash = new Set();
   Object.keys(QUIZ_DATA).forEach(k=>{
     const selected = getQuizSet(k);
     selected.forEach(realIdx=>{
       const q = QUIZ_DATA[k][realIdx];
       if(!q) return;
-      const s = state.quizzes[k+'_'+realIdx] || {};
-      if(s.answered){
+      const key = k+'_'+realIdx;
+      const s = state.quizzes[key] || {};
+      if(s.answered && !countedDash.has(key)){
+        countedDash.add(key);
         totalDone++;
         if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
         else { totalDev++; if(s.correct) correctDev++; }
       }
     });
   });
+  // Robust fallback: include any answered questions not in current quizSets
+  if(state.quizzes){
+    Object.keys(state.quizzes).forEach(k=>{
+      if(!k.includes('_') || countedDash.has(k)) return;
+      var parts = k.split('_');
+      var mod = parts[0];
+      var idx = parseInt(parts[1]);
+      if(!QUIZ_DATA[mod] || !QUIZ_DATA[mod][idx]) return;
+      var q = QUIZ_DATA[mod][idx];
+      var s = state.quizzes[k];
+      if(s && s.answered){
+        countedDash.add(k);
+        totalDone++;
+        if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
+        else { totalDev++; if(s.correct) correctDev++; }
+      }
+    });
+  }
   const totalAnswered = totalMC + totalDev;
   const score = totalAnswered ? Math.round((correctMC+correctDev)/totalAnswered*10)/10 : '--';
   const els = document.getElementById('d-score'); if(els) els.textContent = score==='--'?score:score+'/10';
@@ -779,14 +800,27 @@ function renderDashboard(){
   const eldn = document.getElementById('d-done'); if(eldn) eldn.textContent = totalDone+'/40';
 
   // Real per-module progress bars with percentage labels
+  // Robust: count ALL module answers as fallback if quizSet desync
   let anyProgress = false;
   ['mod1','mod2','mod3','mod4'].forEach(m=>{
     const selected = getQuizSet(m);
     const total = selected.length;
+    const counted = new Set();
     let done = 0;
-    selected.forEach(realIdx=>{ if((state.quizzes[m+'_'+realIdx]||{}).answered) done++; });
-    const pct = total ? Math.round(done/total*100) : 0;
-    if(pct > 0) anyProgress = true;
+    selected.forEach(realIdx=>{
+      if((state.quizzes[m+'_'+realIdx]||{}).answered){ done++; counted.add(realIdx); }
+    });
+    // Robust: count ALL answered questions in this module, even if quizSet changed
+    if(state.quizzes){
+      Object.keys(state.quizzes).forEach(k=>{
+        if(k.startsWith(m+'_') && state.quizzes[k].answered){
+          const idx = parseInt(k.split('_')[1]);
+          if(!counted.has(idx)){ done++; counted.add(idx); }
+        }
+      });
+    }
+    const pct = total ? Math.min(Math.round(Math.min(done,total)/total*100),100) : 0;
+    if(pct > 0 || done > 0) anyProgress = true;
     const bar = document.getElementById('bar-'+m);
     const pctLabel = document.getElementById('pct-'+m);
     if(bar) bar.style.height = Math.max(Math.round(pct/100*120), 4)+'px';
@@ -995,12 +1029,24 @@ function computeProgress(){
   let total=0, done=0;
   Object.keys(QUIZ_DATA).forEach(k=>{
     const selected = getQuizSet(k);
+    const counted = new Set();
+    let moduleDone = 0;
     selected.forEach(realIdx=>{
-      total++;
-      if((state.quizzes[k+'_'+realIdx]||{}).answered) done++;
+      if((state.quizzes[k+'_'+realIdx]||{}).answered){ moduleDone++; counted.add(realIdx); }
     });
+    // Robust fallback: scan all module keys to catch desynchronized quizSets
+    if(state.quizzes){
+      Object.keys(state.quizzes).forEach(key=>{
+        if(key.startsWith(k+'_') && state.quizzes[key].answered){
+          const idx = parseInt(key.split('_')[1]);
+          if(!counted.has(idx)){ moduleDone++; counted.add(idx); }
+        }
+      });
+    }
+    total += 10; // each module contributes max 10 to global progress
+    done += Math.min(moduleDone, 10);
   });
-  return total? Math.round(done/total*100):0;
+  return total? Math.min(Math.round(done/total*100),100):0;
 }
 
 // Utils
@@ -1225,11 +1271,21 @@ function calculateAndCacheStats(){
   var stats = {};
   ['mod1','mod2','mod3','mod4'].forEach(m=>{
     var selected = getQuizSet(m);
+    var counted = new Set();
     var total=0, correct=0;
     selected.forEach(realIdx=>{
       var s = state.quizzes[m+'_'+realIdx];
-      if(s && s.answered){ total++; if(s.correct) correct++; }
+      if(s && s.answered){ total++; if(s.correct) correct++; counted.add(realIdx); }
     });
+    // Robust: scan all keys for this module, adding any not already counted
+    if(state.quizzes){
+      Object.keys(state.quizzes).forEach(k=>{
+        if(k.startsWith(m+'_') && state.quizzes[k].answered){
+          var idx = parseInt(k.split('_')[1]);
+          if(!counted.has(idx)){ total++; if(state.quizzes[k].correct) correct++; counted.add(idx); }
+        }
+      });
+    }
     stats[m] = total ? correct/total : 0;
   });
   var best='', worst='', bestRate=0, worstRate=1;
@@ -1238,18 +1294,35 @@ function calculateAndCacheStats(){
     if(stats[m] < worstRate && stats[m] > 0){ worstRate=stats[m]; worst=m; }
   });
   var totalMC=0, correctMC=0, totalDev=0, correctDev=0;
+  var countedGlobal = new Set();
   Object.keys(QUIZ_DATA).forEach(k=>{
     var selected = getQuizSet(k);
     selected.forEach(realIdx=>{
       var q = QUIZ_DATA[k][realIdx];
       if(!q) return;
-      var s = state.quizzes[k+'_'+realIdx];
-      if(s && s.answered){
+      var key = k+'_'+realIdx;
+      var s = state.quizzes[key];
+      if(s && s.answered && !countedGlobal.has(key)){
+        countedGlobal.add(key);
         if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
         else { totalDev++; if(s.correct) correctDev++; }
       }
     });
   });
+  // Robust fallback: include any answered questions not in current quizSets
+  if(state.quizzes){
+    Object.keys(state.quizzes).forEach(k=>{
+      if(!k.includes('_') || countedGlobal.has(k)) return;
+      var parts = k.split('_'); var mod = parts[0]; var idx = parseInt(parts[1]);
+      if(!QUIZ_DATA[mod] || !QUIZ_DATA[mod][idx]) return;
+      var q = QUIZ_DATA[mod][idx]; var s = state.quizzes[k];
+      if(s && s.answered){
+        countedGlobal.add(k);
+        if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
+        else { totalDev++; if(s.correct) correctDev++; }
+      }
+    });
+  }
   var totalAnswered = totalMC + totalDev;
   var avgScore = totalAnswered ? Math.round((correctMC+correctDev)/totalAnswered*10*10)/10 : null;
   state.globalStats = {
