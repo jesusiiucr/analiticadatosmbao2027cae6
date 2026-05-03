@@ -588,20 +588,14 @@ $$\text{ARIMA}(p,d,q) \quad ; \quad \text{SARIMA}(p,d,q)(P,D,Q)_m \text{ para es
 
 <h2 style="margin-top:30px">Ejercicios: Modulo 4</h2>
 <div class="quiz" id="q-mod4"></div>
+</section>
+
 <!-- RESETEO DEL CURSO -->
 <section id="reset" class="screen">
 <h1>Reseteo del Curso</h1>
-<p>Acceso restringido. Esta seccion permite reiniciar el avance de los modulos para practicar con un nuevo conjunto de preguntas aleatorias.</p>
+<p>Esta seccion permite reiniciar el avance de los modulos para practicar con un nuevo conjunto de preguntas aleatorias.</p>
 
-<div id="reset-access" class="card">
-  <h2>Acceso a la Seccion</h2>
-  <p style="font-size:14px">Ingrese la contraseña de acceso para continuar:</p>
-  <input type="password" id="access-pass" class="dev-area" style="min-height:48px;font-family:var(--font-mono);font-size:16px;text-align:center" placeholder="Contraseña de acceso...">
-  <button class="btn-primary" onclick="checkAccess()">Acceder</button>
-  <div class="feedback err" id="access-feedback" style="display:none;margin-top:12px"></div>
-</div>
-
-<div id="reset-panel" class="card" style="display:none">
+<div id="reset-panel" class="card">
   <h2>Reiniciar Avance de Modulos</h2>
   <p style="font-size:14px;color:var(--text2)">Al reiniciar, se borraran las respuestas de los modulos y se generara un nuevo set de 10 preguntas aleatorias por modulo. <strong style="color:var(--text)">Las metricas de uso (tiempo, pais, visitas) NO se reinician.</strong></p>
   <p style="font-size:14px;margin-top:10px">Para confirmar, ingrese la contraseña de reinicio:</p>
@@ -1067,23 +1061,7 @@ function initSeriesLab(){
 }
 
 // ===== RESETEO =====
-const ACCESS_PASS = 'vamoscontodocae6';
 const RESET_PASS = 'peroveaquebonito';
-
-function checkAccess(){
-  const input = document.getElementById('access-pass').value;
-  const fb = document.getElementById('access-feedback');
-  if(input === ACCESS_PASS){
-    document.getElementById('reset-access').style.display = 'none';
-    document.getElementById('reset-panel').style.display = 'block';
-    if(fb) fb.style.display = 'none';
-  } else {
-    if(fb){
-      fb.style.display = 'block';
-      fb.innerHTML = '<div class="fb-title">✕ Acceso Denegado</div>La contraseña de acceso no es correcta. Esta seccion es solo para usuarios autorizados.';
-    }
-  }
-}
 
 function executeReset(){
   const input = document.getElementById('reset-pass').value;
@@ -1106,6 +1084,7 @@ function executeReset(){
     if(okDiv) okDiv.style.display = 'none';
   }
 }
+window.executeReset = executeReset;
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function(){
