@@ -583,13 +583,41 @@ state.visits++;
 function persist(){ localStorage.setItem('ad_state', JSON.stringify(state)); }
 persist();
 
-// IP Tracking
-let ipInfo = {ip:'Desconocida',country:'Desconocido'};
-fetch('https://freeipapi.com/api/json').then(r=>r.json()).then(d=>{
-  ipInfo = {ip:(d.ipAddress||d.ip||'Privada'), country:(d.countryName||d.country||'Local')};
+// IP Tracking — multi-provider con mapeo de paises
+let ipInfo = {ip:'Detectando...',country:'Detectando...'};
+const CC2NAME = {'CR':'Costa Rica','GT':'Guatemala','SV':'El Salvador','HN':'Honduras','NI':'Nicaragua','PA':'Panama','MX':'Mexico','CO':'Colombia','CL':'Chile','PE':'Peru','AR':'Argentina','ES':'Espana','US':'Estados Unidos','CA':'Canada','BR':'Brasil','EC':'Ecuador','UY':'Uruguay','PY':'Paraguay','BO':'Bolivia','CU':'Cuba','DO':'Republica Dominicana','VE':'Venezuela','PR':'Puerto Rico','FR':'Francia','DE':'Alemania','IT':'Italia','PT':'Portugal','GB':'Reino Unido','NL':'Paises Bajos','BE':'Belgica','CH':'Suiza','AT':'Austria','CN':'China','JP':'Japon','KR':'Corea del Sur','IN':'India','AU':'Australia','RU':'Rusia','ZA':'Sudafrica','NG':'Nigeria','KE':'Kenya','IL':'Israel','AE':'Emiratos Arabes','SA':'Arabia Saudita','SG':'Singapur','MY':'Malasia','TH':'Tailandia','ID':'Indonesia','PH':'Filipinas','VN':'Vietnam','TW':'Taiwan','HK':'Hong Kong','SE':'Suecia','NO':'Noruega','DK':'Dinamarca','FI':'Finlandia','PL':'Polonia','CZ':'Republica Checa','HU':'Hungria','RO':'Rumania','BG':'Bulgaria','HR':'Croacia','SI':'Eslovenia','SK':'Eslovaquia','LT':'Lituania','LV':'Letonia','EE':'Estonia','IE':'Irlanda','IS':'Islandia','NZ':'Nueva Zelanda','GR':'Grecia','TR':'Turquia'};
+function setIP(ip,country){
+  ipInfo = {ip:ip||'Privada',country:country||'Local'};
   updateDashIP();
   saveToCloud({event:'visit',ip:ipInfo.ip,country:ipInfo.country,ua:navigator.userAgent});
-}).catch(()=>{ updateDashIP(); });
+}
+function resolveCountry(d){
+  if(d.country_name) return d.country_name;
+  if(d.country && d.country.length>2) return d.country;
+  if(d.country && CC2NAME[d.country]) return CC2NAME[d.country];
+  if(d.country) return d.country;
+  return 'Desconocido';
+}
+// Primario: ipapi.co (nombre completo, sin token)
+fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
+  if(d.ip && !d.error) setIP(d.ip,resolveCountry(d));
+  else throw new Error('ipapi failed');
+}).catch(()=>{
+  // Fallback 1: ipinfo.io (codigo ISO, mapeamos)
+  fetch('https://ipinfo.io/json').then(r=>r.json()).then(d=>{
+    if(d.ip) setIP(d.ip,resolveCountry(d));
+    else throw new Error('ipinfo failed');
+  }).catch(()=>{
+    // Fallback 2: ipify (solo IP, pais queda desconocido pero IP real)
+    fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
+      if(d.ip) setIP(d.ip,'No identificado');
+      else throw new Error('ipify failed');
+    }).catch(()=>{
+      ipInfo = {ip:'No disponible',country:'No disponible'};
+      updateDashIP();
+    });
+  });
+});
 function updateDashIP(){
   const el1=document.getElementById('d-ip'), el2=document.getElementById('d-country');
   if(el1) el1.textContent = ipInfo.ip;
