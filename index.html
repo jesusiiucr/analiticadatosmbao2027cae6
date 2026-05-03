@@ -266,6 +266,16 @@ tr:hover td{background:rgba(255,255,255,0.02)}
   <p id="dash-no-data" style="text-align:center;font-size:13px;color:var(--text2);margin-top:14px;display:none">Responde quizzes para ver tu progreso por modulo.</p>
 </div>
 
+<h2>Paises que Acceden la Herramienta</h2>
+<div class="card">
+  <div class="dash-grid">
+    <div class="dash-card"><div class="num" style="color:var(--m1)" id="d-country-count">0</div><div class="lbl">Total Paises Detectados</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m2)" id="d-current-country">--</div><div class="lbl">Tu Pais</div></div>
+  </div>
+  <h3 style="margin-top:18px">Lista de Paises Detectados</h3>
+  <div id="detected-countries-list" style="margin-top:10px"></div>
+</div>
+
 <h2>Métricas de Todos los Usuarios</h2>
 <div class="card">
   <div class="dash-grid">
@@ -274,7 +284,10 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <div class="dash-card"><div class="num" style="color:var(--ok)" id="d-global-best">--</div><div class="lbl">Tema con Mejor Respuesta</div></div>
     <div class="dash-card"><div class="num" style="color:var(--err)" id="d-global-worst">--</div><div class="lbl">Tema con Peor Respuesta</div></div>
   </div>
-  <p id="global-status" style="text-align:center;font-size:12px;color:var(--text2);margin-top:10px">Cargando datos globales desde el servidor...</p>
+  <p id="global-status" style="text-align:center;font-size:12px;color:var(--text2);margin-top:10px">
+    <span style="color:var(--warn)">Esperando backend:</span> Las metricas globales requieren que tu Google Apps Script procese los datos recibidos. 
+    <a href="#" style="color:var(--m1);text-decoration:underline" onclick="event.preventDefault();alert('Instrucciones:\n\n1. Ve a script.google.com\n2. Abre tu proyecto del webhook\n3. Pega el codigo del archivo GOOGLE_APPS_SCRIPT_BACKEND.gs\n4. Implementa como Web App con acceso \"Cualquiera\"\n5. Copia la nueva URL y reemplazala en el HTML\n\nLas metricas globales apareceran automaticamente.')">Ver instrucciones</a>
+  </p>
 </div>
 </section>
 
@@ -615,7 +628,7 @@ $$\text{ARIMA}(p,d,q) \quad ; \quad \text{SARIMA}(p,d,q)(P,D,Q)_m \text{ para es
 <script>
 (function(){
 'use strict';
-const FALLBACK_WEBHOOK = 'https://script.google.com/macros/s/AKfycbx76rQIAEB3d3OclsjqnPkSWPizdqNEdiZ_JAnvlnb69pPTZG12VZUoEDyTCskrk9Zd/exec';
+const FALLBACK_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzNata5eiONBx7ZvYjc4RWSP5-wDsQjFGtPC_n4HEEa-VSQZYHf8a_jbvPltxIU1E2H/exec';
 let state = JSON.parse(localStorage.getItem('ad_state')||'{}');
 if(!state.quizzes) state.quizzes = {};
 if(!state.time) state.time = 0;
@@ -629,6 +642,14 @@ let ipInfo = {ip:'Detectando...',country:'Detectando...'};
 const CC2NAME = {'CR':'Costa Rica','GT':'Guatemala','SV':'El Salvador','HN':'Honduras','NI':'Nicaragua','PA':'Panama','MX':'Mexico','CO':'Colombia','CL':'Chile','PE':'Peru','AR':'Argentina','ES':'Espana','US':'Estados Unidos','CA':'Canada','BR':'Brasil','EC':'Ecuador','UY':'Uruguay','PY':'Paraguay','BO':'Bolivia','CU':'Cuba','DO':'Republica Dominicana','VE':'Venezuela','PR':'Puerto Rico','FR':'Francia','DE':'Alemania','IT':'Italia','PT':'Portugal','GB':'Reino Unido','NL':'Paises Bajos','BE':'Belgica','CH':'Suiza','AT':'Austria','CN':'China','JP':'Japon','KR':'Corea del Sur','IN':'India','AU':'Australia','RU':'Rusia','ZA':'Sudafrica','NG':'Nigeria','KE':'Kenya','IL':'Israel','AE':'Emiratos Arabes','SA':'Arabia Saudita','SG':'Singapur','MY':'Malasia','TH':'Tailandia','ID':'Indonesia','PH':'Filipinas','VN':'Vietnam','TW':'Taiwan','HK':'Hong Kong','SE':'Suecia','NO':'Noruega','DK':'Dinamarca','FI':'Finlandia','PL':'Polonia','CZ':'Republica Checa','HU':'Hungria','RO':'Rumania','BG':'Bulgaria','HR':'Croacia','SI':'Eslovenia','SK':'Eslovaquia','LT':'Lituania','LV':'Letonia','EE':'Estonia','IE':'Irlanda','IS':'Islandia','NZ':'Nueva Zelanda','GR':'Grecia','TR':'Turquia'};
 function setIP(ip,country){
   ipInfo = {ip:ip||'Privada',country:country||'Local'};
+  // Track detected countries (persist across resets)
+  if(!state.detectedCountries) state.detectedCountries = [];
+  if(country && country !== 'No identificado' && country !== 'No disponible' && country !== 'Bloqueado por navegador' && country !== 'Detectando...' && country !== 'Local'){
+    if(state.detectedCountries.indexOf(country) === -1){
+      state.detectedCountries.push(country);
+      persist();
+    }
+  }
   updateDashIP();
   saveToCloud({event:'visit',ip:ipInfo.ip,country:ipInfo.country,ua:navigator.userAgent});
 }
@@ -768,11 +789,29 @@ function renderDashboard(){
   // Real country + visits
   const list = document.getElementById('country-list');
   if(list){
-    const flagMap = {'Costa Rica':'🇨🇷','Guatemala':'🇬🇹','El Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Panama':'🇵🇦','Mexico':'🇲🇽','Colombia':'🇨🇴','Chile':'🇨🇱','Peru':'🇵🇪','Argentina':'🇦🇷','Espana':'🇪🇸','Spain':'🇪🇸','United States':'🇺🇸','Estados Unidos':'🇺🇸'};
+    const flagMap = {'Costa Rica':'🇨🇷','Guatemala':'🇬🇹','El Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Panama':'🇵🇦','Mexico':'🇲🇽','Colombia':'🇨🇴','Chile':'🇨🇱','Peru':'🇵🇪','Argentina':'🇦🇷','Espana':'🇪🇸','Spain':'🇪🇸','United States':'🇺🇸','Estados Unidos':'🇺🇸','Brazil':'🇧🇷','Brasil':'🇧🇷','Ecuador':'🇪🇨','Uruguay':'🇺🇾','Paraguay':'🇵🇾','Bolivia':'🇧🇴','Cuba':'🇨🇺','Republica Dominicana':'🇩🇴','Venezuela':'🇻🇪','Puerto Rico':'🇵🇷','Francia':'🇫🇷','Alemania':'🇩🇪','Italia':'🇮🇹','Portugal':'🇵🇹','Reino Unido':'🇬🇧','Paises Bajos':'🇳🇱','Belgica':'🇧🇪','Suiza':'🇨🇭','Austria':'🇦🇹','China':'🇨🇳','Japon':'🇯🇵','Corea del Sur':'🇰🇷','India':'🇮🇳','Australia':'🇦🇺','Rusia':'🇷🇺','Sudafrica':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪','Israel':'🇮🇱','Emiratos Arabes':'🇦🇪','Arabia Saudita':'🇸🇦','Singapur':'🇸🇬','Malasia':'🇲🇾','Tailandia':'🇹🇭','Indonesia':'🇮🇩','Filipinas':'🇵🇭','Vietnam':'🇻🇳','Taiwan':'🇹🇼','Hong Kong':'🇭🇰','Suecia':'🇸🇪','Noruega':'🇳🇴','Dinamarca':'🇩🇰','Finlandia':'🇫🇮','Polonia':'🇵🇱','Republica Checa':'🇨🇿','Hungria':'🇭🇺','Rumania':'🇷🇴','Bulgaria':'🇧🇬','Croacia':'🇭🇷','Eslovenia':'🇸🇮','Eslovaquia':'🇸🇰','Lituania':'🇱🇹','Letonia':'🇱🇻','Estonia':'🇪🇪','Irlanda':'🇮🇪','Islandia':'🇮🇸','Nueva Zelanda':'🇳🇿','Grecia':'🇬🇷','Turquia':'🇹🇷','Canada':'🇨🇦'};
     const f = flagMap[ipInfo.country] || '🌐';
     list.innerHTML = '<div class="country-row"><span>'+f+' '+escapeHtml(ipInfo.country)+'</span><div class="bar-mini" style="width:100%"></div><span>Tu ubicacion</span></div>';
   }
   const elv = document.getElementById('d-visits'); if(elv) elv.textContent = state.visits || 1;
+
+  // Detected countries list
+  const detectedList = document.getElementById('detected-countries-list');
+  const countryCount = document.getElementById('d-country-count');
+  const currentCountry = document.getElementById('d-current-country');
+  const countries = state.detectedCountries || [];
+  if(countryCount) countryCount.textContent = countries.length;
+  if(currentCountry) currentCountry.textContent = ipInfo.country;
+  if(detectedList){
+    if(countries.length > 0){
+      detectedList.innerHTML = countries.map(function(c){
+        var flag = (flagMap[c] || '🌐');
+        return '<div class="country-row"><span>'+flag+' '+escapeHtml(c)+'</span></div>';
+      }).join('');
+    } else {
+      detectedList.innerHTML = '<p style="text-align:center;font-size:13px;color:var(--text2)">Tu pais fue detectado. La lista de multiples paises se poblara cuando configures el backend de Google Apps Script para agregar datos de todos los usuarios.</p>';
+    }
+  }
 
   // Load global metrics
   loadGlobalMetrics();
@@ -875,7 +914,7 @@ function useLocalFallback(modNames, elStatus){
     };
   }
   renderGlobalMetrics(data, modNames);
-  if(elStatus) elStatus.innerHTML = '<span style="color:var(--warn)">Modo local:</span> datos globales requieren que el endpoint GAS devuelva JSON via GET. Mostrando tu desempeno acumulado como referencia.';
+  if(elStatus) elStatus.innerHTML = '<span style="color:var(--warn)">Modo local (tu dispositivo):</span> Estos datos son SOLO de tu sesion actual. Para ver metricas globales de todos los usuarios, configura el backend de Google Apps Script siguiendo las instrucciones del enlace azul arriba.';
 }
 function computeProgress(){
   let total=0, done=0;
