@@ -100,9 +100,10 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 .dash-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
 .dash-card .num{font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--m1);text-shadow:0 0 12px rgba(0,243,255,0.25)}
 .dash-card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-top:4px}
-.bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;margin-top:14px}
-.bar{flex:1;background:linear-gradient(180deg,var(--m2),var(--m4));border-radius:6px 6px 0 0;opacity:.85;position:relative;min-width:8px}
-.bar span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;margin-top:14px;padding-bottom:24px}
+.bar{flex:1;background:linear-gradient(180deg,var(--m2),var(--m4));border-radius:6px 6px 0 0;opacity:.85;position:relative;min-width:8px;transition:height .4s ease}
+.bar span{position:absolute;bottom:-20px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap}
+.bar-empty{background:transparent;border:1px dashed var(--border);opacity:.4}
 .country-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .country-row .flag{font-size:18px;margin-right:8px}
 .country-row .bar-mini{height:6px;border-radius:3px;background:var(--m3);flex:1;margin:0 10px}
@@ -240,11 +241,12 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 <h2>Progreso por Modulo</h2>
 <div class="card">
   <div class="bar-chart" id="mod-bars">
-    <div class="bar" id="bar-m1" style="height:0%"><span>M1</span></div>
-    <div class="bar" id="bar-m2" style="height:0%"><span>M2</span></div>
-    <div class="bar" id="bar-m3" style="height:0%"><span>M3</span></div>
-    <div class="bar" id="bar-m4" style="height:0%"><span>M4</span></div>
+    <div class="bar" id="bar-m1" style="height:2%"><span>M1</span></div>
+    <div class="bar" id="bar-m2" style="height:2%"><span>M2</span></div>
+    <div class="bar" id="bar-m3" style="height:2%"><span>M3</span></div>
+    <div class="bar" id="bar-m4" style="height:2%"><span>M4</span></div>
   </div>
+  <p id="dash-no-data" style="text-align:center;font-size:13px;color:var(--text2);margin-top:8px;display:none">Responde quizzes para ver tu progreso por modulo.</p>
 </div>
 
 <h2>Datos Enviados al Endpoint</h2>
@@ -583,7 +585,7 @@ state.visits++;
 function persist(){ localStorage.setItem('ad_state', JSON.stringify(state)); }
 persist();
 
-// IP Tracking — multi-provider con mapeo de paises
+// IP Tracking — XMLHttpRequest primero (mas confiable que fetch para CORS mixtos)
 let ipInfo = {ip:'Detectando...',country:'Detectando...'};
 const CC2NAME = {'CR':'Costa Rica','GT':'Guatemala','SV':'El Salvador','HN':'Honduras','NI':'Nicaragua','PA':'Panama','MX':'Mexico','CO':'Colombia','CL':'Chile','PE':'Peru','AR':'Argentina','ES':'Espana','US':'Estados Unidos','CA':'Canada','BR':'Brasil','EC':'Ecuador','UY':'Uruguay','PY':'Paraguay','BO':'Bolivia','CU':'Cuba','DO':'Republica Dominicana','VE':'Venezuela','PR':'Puerto Rico','FR':'Francia','DE':'Alemania','IT':'Italia','PT':'Portugal','GB':'Reino Unido','NL':'Paises Bajos','BE':'Belgica','CH':'Suiza','AT':'Austria','CN':'China','JP':'Japon','KR':'Corea del Sur','IN':'India','AU':'Australia','RU':'Rusia','ZA':'Sudafrica','NG':'Nigeria','KE':'Kenya','IL':'Israel','AE':'Emiratos Arabes','SA':'Arabia Saudita','SG':'Singapur','MY':'Malasia','TH':'Tailandia','ID':'Indonesia','PH':'Filipinas','VN':'Vietnam','TW':'Taiwan','HK':'Hong Kong','SE':'Suecia','NO':'Noruega','DK':'Dinamarca','FI':'Finlandia','PL':'Polonia','CZ':'Republica Checa','HU':'Hungria','RO':'Rumania','BG':'Bulgaria','HR':'Croacia','SI':'Eslovenia','SK':'Eslovaquia','LT':'Lituania','LV':'Letonia','EE':'Estonia','IE':'Irlanda','IS':'Islandia','NZ':'Nueva Zelanda','GR':'Grecia','TR':'Turquia'};
 function setIP(ip,country){
@@ -598,21 +600,38 @@ function resolveCountry(d){
   if(d.country) return d.country;
   return 'Desconocido';
 }
-// Primario: ipapi.co (nombre completo, sin token)
-fetch('https://ipapi.co/json/').then(r=>r.json()).then(d=>{
-  if(d.ip && !d.error) setIP(d.ip,resolveCountry(d));
-  else throw new Error('ipapi failed');
-}).catch(()=>{
-  // Fallback 1: ipinfo.io (codigo ISO, mapeamos)
-  fetch('https://ipinfo.io/json').then(r=>r.json()).then(d=>{
-    if(d.ip) setIP(d.ip,resolveCountry(d));
-    else throw new Error('ipinfo failed');
-  }).catch(()=>{
-    // Fallback 2: ipify (solo IP, pais queda desconocido pero IP real)
+function tryXHR(url, parser, onErr){
+  try{
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET',url,true);
+    xhr.onreadystatechange = function(){
+      if(xhr.readyState===4){
+        if(xhr.status===200){
+          try{ var d = JSON.parse(xhr.responseText); parser(d); }catch(e){ onErr(); }
+        } else { onErr(); }
+      }
+    };
+    xhr.onerror = onErr;
+    xhr.ontimeout = onErr;
+    xhr.timeout = 8000;
+    xhr.send();
+  }catch(e){ onErr(); }
+}
+// Intento 1: ipinfo.io via XHR (CORS mas permisivo)
+tryXHR('https://ipinfo.io/json', function(d){
+  if(d.ip) setIP(d.ip,resolveCountry(d));
+  else throw new Error('no ip');
+}, function(){
+  // Intento 2: ipapi.co via XHR
+  tryXHR('https://ipapi.co/json/', function(d){
+    if(d.ip && !d.error) setIP(d.ip,resolveCountry(d));
+    else throw new Error('ipapi failed');
+  }, function(){
+    // Intento 3: ipify via fetch (solo IP)
     fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(d=>{
       if(d.ip) setIP(d.ip,'No identificado');
       else throw new Error('ipify failed');
-    }).catch(()=>{
+    }).catch(function(){
       ipInfo = {ip:'No disponible',country:'No disponible'};
       updateDashIP();
     });
@@ -691,14 +710,18 @@ function renderDashboard(){
   const eldn = document.getElementById('d-done'); if(eldn) eldn.textContent = totalDone+'/40';
 
   // Real per-module progress bars
+  let anyProgress = false;
   ['mod1','mod2','mod3','mod4'].forEach((m,idx)=>{
     const total = QUIZ_DATA[m].length;
     let done = 0;
     QUIZ_DATA[m].forEach((_,i)=>{ if((state.quizzes[m+'_'+i]||{}).answered) done++; });
     const pct = total ? Math.round(done/total*100) : 0;
+    if(pct > 0) anyProgress = true;
     const bar = document.getElementById('bar-'+m);
-    if(bar) bar.style.height = pct+'%';
+    if(bar) bar.style.height = Math.max(pct, 2)+'%';
   });
+  const noDataMsg = document.getElementById('dash-no-data');
+  if(noDataMsg) noDataMsg.style.display = anyProgress ? 'none' : 'block';
 
   // Real country + visits
   const list = document.getElementById('country-list');
@@ -784,6 +807,9 @@ window._submitMC = function(mod,i){
   // global progress update
   const prog = computeProgress();
   const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+  // Refresh dashboard if visible
+  const dash = document.getElementById('dash');
+  if(dash && dash.classList.contains('active')) renderDashboard();
 }
 window._submitDev = function(mod,i){
   const q = QUIZ_DATA[mod][i];
@@ -797,6 +823,9 @@ window._submitDev = function(mod,i){
   saveToCloud({event:'quiz',mod:mod,q:i,correct:correct,type:'dev',matches:matches,ip:ipInfo.ip});
   const prog = computeProgress();
   const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+  // Refresh dashboard if visible
+  const dash = document.getElementById('dash');
+  if(dash && dash.classList.contains('active')) renderDashboard();
 }
 
 // ===== CANVAS VISUALIZATIONS =====
