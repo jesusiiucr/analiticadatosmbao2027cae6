@@ -105,6 +105,12 @@ tr:hover td{background:rgba(255,255,255,0.02)}
 .bar{width:100%;background:linear-gradient(180deg,var(--m2),var(--m4));border-radius:6px 6px 0 0;opacity:.85;position:relative;min-height:4px;transition:height .5s ease}
 .bar span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap}
 .bar-pct{font-family:var(--font-mono);font-size:11px;color:var(--text2);font-weight:600}
+.country-chart{margin-top:14px}
+.country-bar-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.country-bar-label{width:110px;text-align:right;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.country-bar-track{flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;position:relative}
+.country-bar-fill{height:100%;background:linear-gradient(90deg,var(--m3),var(--m1));border-radius:4px;transition:width .6s ease;min-width:4px}
+.country-bar-count{width:40px;text-align:right;color:var(--text2);font-family:var(--font-mono);font-size:12px}
 .country-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .country-row .flag{font-size:18px;margin-right:8px}
 .country-row .bar-mini{height:6px;border-radius:3px;background:var(--m3);flex:1;margin:0 10px}
@@ -272,8 +278,8 @@ tr:hover td{background:rgba(255,255,255,0.02)}
     <div class="dash-card"><div class="num" style="color:var(--m1)" id="d-country-count">0</div><div class="lbl">Total Paises Detectados</div></div>
     <div class="dash-card"><div class="num" style="color:var(--m2)" id="d-current-country">--</div><div class="lbl">Tu Pais</div></div>
   </div>
-  <h3 style="margin-top:18px">Lista de Paises Detectados</h3>
-  <div id="detected-countries-list" style="margin-top:10px"></div>
+  <h3 style="margin-top:18px">Top 10 Paises por Visitas</h3>
+  <div class="country-chart" id="country-chart"></div>
 </div>
 
 <h2>Métricas de Todos los Usuarios</h2>
@@ -628,7 +634,7 @@ $$\text{ARIMA}(p,d,q) \quad ; \quad \text{SARIMA}(p,d,q)(P,D,Q)_m \text{ para es
 <script>
 (function(){
 'use strict';
-const FALLBACK_WEBHOOK = 'https://script.google.com/macros/s/AKfycbziz5BNLoJFRig_245j2HhX8kgQbpzpF9Rx-xRQe6Jl0RtFwhZNWxPjPIBahNfwrWWa/exec';
+const FALLBACK_WEBHOOK = 'https://script.google.com/macros/s/AKfycbz0jBwPi-KfL5fqt6l0HP0WiOLhYp_VV6KAzyWsatVKoLeNK1r6DRuTc1OteeuyHXoS/exec';
 let state = JSON.parse(localStorage.getItem('ad_state')||'{}');
 if(!state.quizzes) state.quizzes = {};
 if(!state.time) state.time = 0;
@@ -742,6 +748,9 @@ window.navigate = function(id){
 };
 
 // Dashboard - ALL REAL DATA
+// Dashboard - auto refresh interval
+var dashInterval = null;
+
 function renderDashboard(){
   updateDashIP(); updateDashTime();
   const prog = computeProgress();
@@ -795,22 +804,34 @@ function renderDashboard(){
   }
   const elv = document.getElementById('d-visits'); if(elv) elv.textContent = state.visits || 1;
 
-  // Detected countries list - try to load from GAS first
+  // Detected countries - try GAS first
   var detectedList = document.getElementById('detected-countries-list');
   var countryCount = document.getElementById('d-country-count');
   var currentCountry = document.getElementById('d-current-country');
   if(currentCountry) currentCountry.textContent = ipInfo.country;
   
-  // Try loading countries from GAS backend
   loadGlobalCountries(detectedList, countryCount);
 
   // Load global metrics
   loadGlobalMetrics();
+
+  // Start auto-refresh if not already running
+  if(!dashInterval){
+    dashInterval = setInterval(function(){
+      var dash = document.getElementById('dash');
+      if(dash && dash.classList.contains('active')){
+        loadGlobalMetrics();
+        loadGlobalCountries(document.getElementById('detected-countries-list'), document.getElementById('d-country-count'));
+      }
+    }, 30000);
+  }
 }
 
 function loadGlobalCountries(detectedList, countryCount){
-  if(!detectedList) return;
   var flagMap = {'Costa Rica':'🇨🇷','Guatemala':'🇬🇹','El Salvador':'🇸🇻','Honduras':'🇭🇳','Nicaragua':'🇳🇮','Panama':'🇵🇦','Mexico':'🇲🇽','Colombia':'🇨🇴','Chile':'🇨🇱','Peru':'🇵🇪','Argentina':'🇦🇷','Espana':'🇪🇸','Spain':'🇪🇸','United States':'🇺🇸','Estados Unidos':'🇺🇸','Brazil':'🇧🇷','Brasil':'🇧🇷','Ecuador':'🇪🇨','Uruguay':'🇺🇾','Paraguay':'🇵🇾','Bolivia':'🇧🇴','Cuba':'🇨🇺','Republica Dominicana':'🇩🇴','Venezuela':'🇻🇪','Puerto Rico':'🇵🇷','Francia':'🇫🇷','Alemania':'🇩🇪','Italia':'🇮🇹','Portugal':'🇵🇹','Reino Unido':'🇬🇧','Paises Bajos':'🇳🇱','Belgica':'🇧🇪','Suiza':'🇨🇭','Austria':'🇦🇹','China':'🇨🇳','Japon':'🇯🇵','Corea del Sur':'🇰🇷','India':'🇮🇳','Australia':'🇦🇺','Rusia':'🇷🇺','Sudafrica':'🇿🇦','Nigeria':'🇳🇬','Kenya':'🇰🇪','Israel':'🇮🇱','Emiratos Arabes':'🇦🇪','Arabia Saudita':'🇸🇦','Singapur':'🇸🇬','Malasia':'🇲🇾','Tailandia':'🇹🇭','Indonesia':'🇮🇩','Filipinas':'🇵🇭','Vietnam':'🇻🇳','Taiwan':'🇹🇼','Hong Kong':'🇭🇰','Suecia':'🇸🇪','Noruega':'🇳🇴','Dinamarca':'🇩🇰','Finlandia':'🇫🇮','Polonia':'🇵🇱','Republica Checa':'🇨🇿','Hungria':'🇭🇺','Rumania':'🇷🇴','Bulgaria':'🇧🇬','Croacia':'🇭🇷','Eslovenia':'🇸🇮','Eslovaquia':'🇸🇰','Lituania':'🇱🇹','Letonia':'🇱🇻','Estonia':'🇪🇪','Irlanda':'🇮🇪','Islandia':'🇮🇸','Nueva Zelanda':'🇳🇿','Grecia':'🇬🇷','Turquia':'🇹🇷','Canada':'🇨🇦'};
+  
+  // Find chart container
+  var chartContainer = document.getElementById('country-chart');
   
   // Try loading from GAS
   try{
@@ -821,39 +842,48 @@ function loadGlobalCountries(detectedList, countryCount){
         try{
           var text = xhr.responseText;
           if(text.indexOf('<!DOCTYPE')===0 || text.indexOf('<html')===0){
-            showLocalCountries(detectedList, countryCount, flagMap);
+            showLocalCountries(detectedList, countryCount, flagMap, chartContainer);
             return;
           }
           var data = JSON.parse(text);
           if(data && data.success && data.countries){
             if(countryCount) countryCount.textContent = data.total || data.countries.length;
-            detectedList.innerHTML = data.countries.map(function(c){
-              var flag = flagMap[c.name] || '🌐';
-              return '<div class="country-row"><span>'+flag+' '+escapeHtml(c.name)+'</span><span style="color:var(--text2);font-size:12px">'+c.count+' visitas</span></div>';
-            }).join('');
+            // Sort by count desc, take top 10
+            var sorted = data.countries.slice().sort(function(a,b){ return (b.count||0)-(a.count||0); }).slice(0,10);
+            var maxCount = sorted.length > 0 ? (sorted[0].count||1) : 1;
+            if(chartContainer){
+              chartContainer.innerHTML = sorted.map(function(c){
+                var flag = flagMap[c.name] || '🌐';
+                var pct = Math.max(Math.round((c.count/maxCount)*100), 4);
+                return '<div class="country-bar-row"><div class="country-bar-label">'+flag+' '+escapeHtml(c.name)+'</div><div class="country-bar-track"><div class="country-bar-fill" style="width:'+pct+'%"></div></div><div class="country-bar-count">'+c.count+'</div></div>';
+              }).join('');
+            }
             return;
           }
         }catch(e){}
       }
-      showLocalCountries(detectedList, countryCount, flagMap);
+      showLocalCountries(detectedList, countryCount, flagMap, chartContainer);
     };
-    xhr.onerror = function(){ showLocalCountries(detectedList, countryCount, flagMap); };
-    xhr.ontimeout = function(){ showLocalCountries(detectedList, countryCount, flagMap); };
+    xhr.onerror = function(){ showLocalCountries(detectedList, countryCount, flagMap, chartContainer); };
+    xhr.ontimeout = function(){ showLocalCountries(detectedList, countryCount, flagMap, chartContainer); };
     xhr.timeout = 8000;
     xhr.send();
-  }catch(e){ showLocalCountries(detectedList, countryCount, flagMap); }
+  }catch(e){ showLocalCountries(detectedList, countryCount, flagMap, chartContainer); }
 }
 
-function showLocalCountries(detectedList, countryCount, flagMap){
+function showLocalCountries(detectedList, countryCount, flagMap, chartContainer){
   var countries = state.detectedCountries || [];
   if(countryCount) countryCount.textContent = countries.length;
-  if(countries.length > 0){
-    detectedList.innerHTML = countries.map(function(c){
-      var flag = (flagMap[c] || '🌐');
-      return '<div class="country-row"><span>'+flag+' '+escapeHtml(c)+'</span></div>';
-    }).join('');
-  } else {
-    detectedList.innerHTML = '<p style="text-align:center;font-size:13px;color:var(--text2)">Tu pais fue detectado. La lista de multiples paises se poblara cuando el backend GAS reciba datos de todos los usuarios.</p>';
+  if(chartContainer){
+    if(countries.length > 0){
+      var rows = countries.map(function(c){
+        var flag = (flagMap[c] || '🌐');
+        return '<div class="country-bar-row"><div class="country-bar-label">'+flag+' '+escapeHtml(c)+'</div><div class="country-bar-track"><div class="country-bar-fill" style="width:100%"></div></div><div class="country-bar-count">1</div></div>';
+      }).join('');
+      chartContainer.innerHTML = rows;
+    } else {
+      chartContainer.innerHTML = '<p style="text-align:center;font-size:13px;color:var(--text2)">Tu pais fue detectado. La lista de multiples paises se poblara cuando el backend GAS reciba datos de todos los usuarios.</p>';
+    }
   }
 }
 
