@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Analitica de Datos — Preparacion de Examen</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<style>
+:root {
+  --bg:#000000;--surface:#0a0a0a;--surface2:#111111;--surface3:#161616;--text:#e8e8e8;--text2:#a0a0a0;--border:#222222;
+  --m1:#00f3ff;--m2:#ff00ff;--m3:#39ff14;--m4:#ffae00;
+  --ok:#00ff9d;--err:#ff3366;--warn:#ffcc00;
+  --font-title:'Playfair Display',serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--font-body);overflow:hidden;-webkit-font-smoothing:antialiased}
+#app{height:100vh;display:flex;flex-direction:column}
+
+/* Navegacion */
+nav{position:fixed;bottom:0;left:0;right:0;height:64px;background:linear-gradient(180deg,rgba(0,0,0,0) 0%,rgba(10,10,10,0.95) 20%,var(--surface) 100%);border-top:1px solid var(--border);display:flex;justify-content:space-around;align-items:center;z-index:100;padding:0 8px;backdrop-filter:blur(8px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--text2);font-size:10px;text-transform:uppercase;letter-spacing:0.8px;cursor:pointer;transition:all .2s;border:none;background:none;height:100%;position:relative}
+.nav-btn .dot{width:4px;height:4px;border-radius:50%;background:transparent;position:absolute;top:8px;transition:.3s}
+.nav-btn.active{color:var(--text);font-weight:600}
+.nav-btn.active .dot{background:var(--m1);box-shadow:0 0 8px var(--m1)}
+.nav-btn[data-mod="mod2"].active .dot{background:var(--m2);box-shadow:0 0 8px var(--m2)}
+.nav-btn[data-mod="mod3"].active .dot{background:var(--m3);box-shadow:0 0 8px var(--m3)}
+.nav-btn[data-mod="mod4"].active .dot{background:var(--m4);box-shadow:0 0 8px var(--m4)}
+.nav-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Layout principal */
+main{flex:1;overflow-y:auto;padding:24px 16px 100px 16px;scroll-behavior:smooth}
+.screen{display:none;animation:fadeIn .4s ease}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes glow{0%{box-shadow:0 0 5px currentColor}50%{box-shadow:0 0 20px currentColor}100%{box-shadow:0 0 5px currentColor}}
+
+/* Tipografia */
+h1,h2,h3{font-family:var(--font-title);font-weight:700;line-height:1.15}
+h1{font-size:clamp(1.6rem,4vw,2.4rem);margin-bottom:12px}
+h2{font-size:clamp(1.3rem,3vw,1.8rem);margin:28px 0 12px}
+h3{font-size:clamp(1.05rem,2.5vw,1.3rem);margin:20px 0 8px}
+p{font-size:15px;line-height:1.7;color:var(--text2);margin-bottom:12px}
+strong{color:var(--text)}
+
+/* Tarjetas */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;position:relative;overflow:hidden;transition:border-color .3s,box-shadow .3s}
+.card:hover{border-color:#333}
+.card-accent::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:14px 0 0 14px}
+.m1 .card-accent::before{background:var(--m1);box-shadow:0 0 10px var(--m1)}
+.m2 .card-accent::before{background:var(--m2);box-shadow:0 0 10px var(--m2)}
+.m3 .card-accent::before{background:var(--m3);box-shadow:0 0 10px var(--m3)}
+.m4 .card-accent::before{background:var(--m4);box-shadow:0 0 10px var(--m4)}
+
+/* Tablas tipo terminal */
+table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:13px;margin:14px 0}
+th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+th{color:var(--text);font-weight:600;background:var(--surface2);text-transform:uppercase;letter-spacing:0.6px;font-size:11px}
+tr:hover td{background:rgba(255,255,255,0.02)}
+.highlight-row td{background:rgba(0,243,255,0.06);color:var(--m1)}
+
+/* Ejercicios */
+.quiz{margin-top:10px}
+.q-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
+.q-title{font-family:var(--font-title);font-size:16px;color:var(--text);margin-bottom:10px}
+.options{display:flex;flex-direction:column;gap:8px}
+.opt{background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;font-size:14px;color:var(--text2);transition:.15s;display:flex;align-items:center;gap:10px}
+.opt:hover{border-color:#444}
+.opt.selected{border-color:var(--text);color:var(--text)}
+.opt.correct{border-color:var(--ok);background:rgba(0,255,157,0.08);color:var(--ok)}
+.opt.wrong{border-color:var(--err);background:rgba(255,51,102,0.08);color:var(--err)}
+.opt .marker{width:18px;height:18px;border-radius:50%;border:2px solid var(--text2);flex-shrink:0;display:grid;place-items:center;font-size:10px;font-weight:700}
+.opt.selected .marker,.opt.correct .marker,.opt.wrong .marker{border-color:currentColor}
+.opt.correct .marker{background:var(--ok);color:#000;border:none}
+.opt.wrong .marker{background:var(--err);color:#fff;border:none}
+
+/* Feedback */
+.feedback{margin-top:12px;padding:14px;border-radius:10px;font-size:14px;line-height:1.6;display:none}
+.feedback.ok{display:block;background:rgba(0,255,157,0.08);border:1px solid var(--ok);color:#c8ffe0;animation:pop .35s ease}
+.feedback.err{display:block;background:rgba(255,51,102,0.08);border:1px solid var(--err);color:#ffc8d4;animation:shake .4s ease}
+.feedback .fb-title{font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px;font-size:15px}
+
+/* Textarea desarrollo */
+.dev-area{width:100%;min-height:120px;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:12px;color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;resize:vertical;margin-top:8px}
+.dev-area:focus{outline:none;border-color:var(--text)}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--text);color:#000;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:13px;cursor:pointer;margin-top:10px;transition:transform .15s}
+.btn-primary:active{transform:scale(0.96)}
+
+/* Dashboard */
+.dash-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:10px}
+.dash-card{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center}
+.dash-card .num{font-family:var(--font-mono);font-size:28px;font-weight:700;color:var(--m1);text-shadow:0 0 12px rgba(0,243,255,0.25)}
+.dash-card .lbl{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-top:4px}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:140px;margin-top:14px}
+.bar{flex:1;background:linear-gradient(180deg,var(--m2),var(--m4));border-radius:6px 6px 0 0;opacity:.85;position:relative;min-width:8px}
+.bar span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--text2);white-space:nowrap}
+.country-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.country-row .flag{font-size:18px;margin-right:8px}
+.country-row .bar-mini{height:6px;border-radius:3px;background:var(--m3);flex:1;margin:0 10px}
+
+/* Home */
+.hero{text-align:center;padding:40px 10px}
+.hero h1{font-size:clamp(2rem,6vw,3.2rem);background:linear-gradient(90deg,var(--m1),var(--m2),var(--m3),var(--m4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{max-width:520px;margin:14px auto 28px;font-size:16px}
+.cta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:600px;margin:0 auto}
+.cta-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;text-align:left;cursor:pointer;transition:.2s}
+.cta-card:hover{transform:translateY(-3px);border-color:#444}
+.cta-card .num{font-family:var(--font-mono);font-size:12px;color:var(--text2);margin-bottom:6px}
+.cta-card h3{font-family:var(--font-body);font-size:16px;font-weight:700;margin-bottom:6px}
+.cta-card p{font-size:13px;margin:0}
+
+/* Visualizaciones interactivas */
+.canvas-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0}
+.canvas-wrap canvas{width:100%;height:220px;display:block}
+.slider-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px;color:var(--text2)}
+.slider-row input[type=range]{flex:1}
+
+/* Utilidades */
+.tag{display:inline-block;padding:3px 10px;border-radius:20px;border:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--text2);margin-right:6px;margin-bottom:6px}
+.neon-text{text-shadow:0 0 8px currentColor}
+.formula{font-size:15px;margin:10px 0;padding:12px;background:var(--surface2);border-left:3px solid var(--m1);border-radius:0 10px 10px 0;font-family:var(--font-mono);overflow-x:auto}
+.two-col{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:768px){
+  main{padding:32px 32px 100px 32px}
+  .two-col{grid-template-columns:1fr 1fr}
+  .dash-grid{grid-template-columns:repeat(4,1fr)}
+  .cta-grid{grid-template-columns:1fr 1fr 1fr 1fr}
+  .bar-chart{height:180px}
+}
+@media(min-width:1024px){
+  nav{top:0;bottom:auto;left:0;width:220px;height:100vh;flex-direction:column;justify-content:flex-start;gap:8px;padding:24px 12px;border-top:none;border-right:1px solid var(--border);background:var(--surface)}
+  main{margin-left:220px;padding:40px 48px 40px 48px}
+  .nav-btn{flex:none;width:100%;flex-direction:row;justify-content:flex-start;padding:12px 14px;border-radius:10px;height:auto}
+  .nav-btn .dot{position:static;width:6px;height:6px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<nav id="navbar">
+  <button class="nav-btn active" data-target="home" onclick="navigate('home')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Inicio</span>
+  </button>
+  <button class="nav-btn" data-target="mod1" data-mod="mod1" onclick="navigate('mod1')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    <span>Hipotesis</span>
+  </button>
+  <button class="nav-btn" data-target="mod2" data-mod="mod2" onclick="navigate('mod2')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>Regresion</span>
+  </button>
+  <button class="nav-btn" data-target="mod3" data-mod="mod3" onclick="navigate('mod3')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+    <span>Logistica</span>
+  </button>
+  <button class="nav-btn" data-target="mod4" data-mod="mod4" onclick="navigate('mod4')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Series</span>
+  </button>
+  <button class="nav-btn" data-target="dash" onclick="navigate('dash')">
+    <div class="dot"></div>
+    <svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+    <span>Analytics</span>
+  </button>
+</nav>
+
+<main id="main">
+
+<!-- HOME -->
+<section id="home" class="screen active">
+<div class="hero">
+  <h1 class="neon-text">Analitica de Datos</h1>
+  <p>Preparacion intensiva para el examen. Cuatro modulos: Test de Hipotesis, Regresion Lineal, Regresion Logistica y Series de Tiempo. Construye intuicion, rigor tecnico y criterio de decision.</p>
+  <div class="cta-grid">
+    <div class="cta-card" onclick="navigate('mod1')">
+      <div class="num" style="color:var(--m1)">01</div>
+      <h3>Test de Hipotesis</h3>
+      <p>p-values, intervalos de confianza, errores Tipo I/II y A/B testing.</p>
+    </div>
+    <div class="cta-card" onclick="navigate('mod2')">
+      <div class="num" style="color:var(--m2)">02</div>
+      <h3>Regresion Lineal</h3>
+      <p>Simple y multiple. R² ajustado, supuestos MCO y parsimonia.</p>
+    </div>
+    <div class="cta-card" onclick="navigate('mod3')">
+      <div class="num" style="color:var(--m3)">03</div>
+      <h3>Regresion Logistica</h3>
+      <p>Clasificacion, scoring, AUC y trade-offs de umbral.</p>
+    </div>
+    <div class="cta-card" onclick="navigate('mod4')">
+      <div class="num" style="color:var(--m4)">04</div>
+      <h3>Series de Tiempo</h3>
+      <p>ETS, ARIMA, supuestos y diagnostico de residuos.</p>
+    </div>
+  </div>
+  <div style="margin-top:30px">
+    <span class="tag">Dark Mode</span><span class="tag">LaTeX</span><span class="tag">Metricas Reales</span><span class="tag">Feedback Inteligente</span>
+  </div>
+</div>
+</section>
+
+<!-- DASHBOARD -->
+<section id="dash" class="screen">
+<h1>Dashboard de Analytics</h1>
+<p>Visualizacion en tiempo real del progreso y metricas recolectadas.</p>
+
+<h2>Tu Sesion</h2>
+<div class="dash-grid">
+  <div class="dash-card"><div class="num" id="d-ip">--</div><div class="lbl">IP Detectada</div></div>
+  <div class="dash-card"><div class="num" id="d-country">--</div><div class="lbl">Pais</div></div>
+  <div class="dash-card"><div class="num" id="d-time">0s</div><div class="lbl">Tiempo Activo</div></div>
+  <div class="dash-card"><div class="num" id="d-progress">0%</div><div class="lbl">Progreso</div></div>
+</div>
+
+<h2>Metricas Globales (Simulado / Agregado)</h2>
+<div class="card">
+  <div class="dash-grid">
+    <div class="dash-card"><div class="num" style="color:var(--m2)">68%</div><div class="lbl">Tasa Finalizacion</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m3)">7.4</div><div class="lbl">Promedio Notas /10</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m4)">12</div><div class="lbl">Paises Activos</div></div>
+    <div class="dash-card"><div class="num" style="color:var(--m1)">3h 12m</div><div class="lbl">Tiempo Medio</div></div>
+  </div>
+  <h3 style="margin-top:18px">Distribucion por Pais</h3>
+  <div id="country-list" style="margin-top:10px"></div>
+  <p style="font-size:12px;color:#666;margin-top:10px">Nota: en produccion estos datos se sincronizan desde el endpoint. Actualmente se muestran datos de muestra representativos.</p>
+</div>
+
+<h2>Progreso por Modulo</h2>
+<div class="card">
+  <div class="bar-chart" id="mod-bars">
+    <div class="bar" style="height:20%"><span>M1</span></div>
+    <div class="bar" style="height:40%"><span>M2</span></div>
+    <div class="bar" style="height:35%"><span>M3</span></div>
+    <div class="bar" style="height:55%"><span>M4</span></div>
+  </div>
+</div>
+</section>
+
+<!-- MODULO 1: TEST DE HIPOTESIS E INTERVALOS DE CONFIANZA -->
+<section id="mod1" class="screen m1">
+<h1>Test de Hipotesis e Intervalos de Confianza</h1>
+<p>La base cientifica para tomar decisiones bajo incertidumbre. Del p-value al intervalo: como cuantificar la evidencia sin exagerarla.</p>
+
+<div class="card card-accent">
+<h2>1. Fundamentos: Datos, Distribuciones y Variabilidad</h2>
+<p>Antes de cualquier analisis debemos clasificar las variables. Una <strong>variable continua</strong> tiene media calculable y distribucion; una <strong>categorica nominal</strong> solo indica clase. Aplicar un t-test a una variable nominal es el error mas comun.</p>
+<p>La <strong>distribucion Normal</strong> $N(\mu, \sigma^2)$ es simetrica y completamente definida por su media y desviacion estandar. El 68-95-99.7% de los datos caen dentro de $\pm 1\sigma$, $\pm 2\sigma$, $\pm 3\sigma$.</p>
+<div class="formula">
+$$SE = \frac{s}{\sqrt{n}}$$
+El Error Estandar cuantifica la variabilidad de la media muestral, no de los datos individuales. Duplicar la precision requiere cuadruplicar $n$.
+</div>
+</div>
+
+<div class="card card-accent">
+<h2>2. Hipotesis: El Beneficio de la Duda</h2>
+<p>Empezamos asumiendo que <strong>no hay efecto</strong>. La <strong>hipotesis nula</strong> $H_0$ es el status quo; la <strong>alternativa</strong> $H_1$ es lo que queremos demostrar.</p>
+<ul style="color:var(--text2);font-size:14px;line-height:1.8;margin:10px 0 10px 18px">
+<li><strong>Bilateral</strong> ($H_1: \mu \neq \mu_0$): detectar diferencia en cualquier direccion. Se elige <em>antes</em> de ver los datos.</li>
+<li><strong>Unilateral</strong> ($H_1: \mu > \mu_0$ o $\mu < \mu_0$): detectar cambio en una direccion especifica.</li>
+</ul>
+<div class="formula">
+$$t = \frac{\bar{x}_1 - \bar{x}_2}{SE_{\text{diferencia}}}$$
+El numerador es la diferencia observada (lo que $H_0$ dice que es cero). El denominador es la variabilidad esperada por azar.
+</div>
+</div>
+
+<div class="card card-accent">
+<h2>3. P-Value: Que Tan Raro es "Demasiado Raro"</h2>
+<p>El <strong>p-value</strong> es la probabilidad de observar datos tan extremos como los actuales <em>si $H_0$ fuera verdadera</em>. No es la probabilidad de que $H_0$ sea verdadera.</p>
+<div class="formula">
+$$\text{Si } p\text{-value} < \alpha \Rightarrow \text{Rechazamos } H_0 \quad ; \quad \text{Si } p\text{-value} \geq \alpha \Rightarrow \text{No rechazamos } H_0$$
+</div>
+<table>
+<tr><th>$$\alpha$$</th><th>Interpretacion</th><th>Cuando usar</th></tr>
+<tr><td>0.10</td><td>10% de probabilidad de error Tipo I</td><td>Analisis exploratorio, bajo costo de error</td></tr>
+<tr><td>0.05</td><td>5% de probabilidad de error Tipo I</td><td>Estandar en negocios y ciencias sociales</td></tr>
+<tr><td>0.01</td><td>1% de probabilidad de error Tipo I</td><td>Decisiones criticas, alto costo de error</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>4. Errores Tipo I y Tipo II</h2>
+<table>
+<tr><th></th><th>$H_0$ es Verdadera</th><th>$H_0$ es Falsa</th></tr>
+<tr><th>Rechazamos $H_0$</th><td style="color:var(--err)">Error Tipo I (Falso Positivo), Prob=$\alpha$</td><td style="color:var(--ok)">Decision Correcta (Poder)</td></tr>
+<tr><th>No Rechazamos $H_0$</th><td style="color:var(--ok)">Decision Correcta, Confianza=$1-\alpha$</td><td style="color:var(--err)">Error Tipo II (Falso Negativo), Prob=$\beta$</td></tr>
+</table>
+<p>Reducir ambos errores a la vez requiere aumentar el <strong>tamaño de muestra</strong> $n$.</p>
+</div>
+
+<div class="card card-accent">
+<h2>5. A/B Testing como Test de Hipotesis</h2>
+<p>Un A/B test es exactamente un test de hipotesis con lenguaje de negocio:</p>
+<ul style="color:var(--text2);font-size:14px;line-height:1.8;margin:10px 0 10px 18px">
+<li>$H_0$: la version B no mejora sobre A.</li>
+<li>$H_1$: la version B si mejora sobre A.</li>
+<li>$\alpha=0.05$: toleramos 5% de falsos positivos.</li>
+<li>p-value: probabilidad de ver esta diferencia si B = A.</li>
+</ul>
+<p>Errores comunes: parar muy temprano, p-hacking (probar 10 variantes y reportar solo la que dio $p<0.05$), muestra insuficiente e ignorar la magnitud del efecto.</p>
+</div>
+
+<div class="card card-accent">
+<h2>6. Intervalos de Confianza</h2>
+<p>El punto estimado $\bar{x}$ no es $\mu$. El <strong>intervalo de confianza</strong> cuantifica la incertidumbre:</p>
+<div class="formula">
+$$IC_{95\%} = \bar{x} \pm 1.96 \times SE = \bar{x} \pm 1.96 \times \frac{s}{\sqrt{n}}$$
+</div>
+<p><strong>Interpretacion correcta (frecuentista):</strong> Si repitieramos el muestreo muchas veces, el 95% de los intervalos asi construidos contendrian a $\mu$. <strong>No</strong> es "hay 95% de probabilidad de que $\mu$ esté en este intervalo" — $\mu$ es fijo.</p>
+<p><strong>Ley de rendimientos decrecientes:</strong> para reducir el margen de error a la mitad, hay que cuadruplicar $n$.</p>
+<div class="formula">
+$$n \geq \left(\frac{z \cdot s}{E}\right)^2$$
+</div>
+</div>
+
+<div class="card card-accent">
+<h2>7. IC y Testeo: Dos Caras de la Misma Moneda</h2>
+<p>Todo lo que resuelve el p-value, lo resuelve el IC — y ademas nos dice <em>cuanto</em>.</p>
+<table>
+<tr><th>Lenguaje Testeo</th><th>Lenguaje IC</th></tr>
+<tr><td>Rechazamos $H_0$ al 5%</td><td>El valor bajo $H_0$ cae <strong>fuera</strong> del IC 95%</td></tr>
+<tr><td>No rechazamos $H_0$ al 5%</td><td>El valor bajo $H_0$ cae <strong>dentro</strong> del IC 95%</td></tr>
+<tr><td>Mayor $n$ $\rightarrow$ p-value mas pequeno</td><td>Mayor $n$ $\rightarrow$ IC mas angosto</td></tr>
+<tr><td>p-value responde: ¿es real?</td><td>IC responde: ¿es real y <em>cuanto</em>?</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>8. Valor de Negocio</h2>
+<p><strong>Significancia estadistica $\neq$ importancia practica.</strong> Un resultado puede ser $p<0.001$ con un efecto trivial ($\Delta = 0.025\%$ en conversion). La decision de actuar requiere: p-value + tamano del efecto + intervalos de confianza + contexto de negocio.</p>
+<p><strong>Que NO podemos decir de un modelo:</strong> asociacion no implica causalidad. Un IC significativo para Nils Baker no prueba que la sucursal <em>cause</em> mayor penetracion; puede haber variables de confusion (ingreso, demografia).</p>
+</div>
+
+<h2 style="margin-top:30px">Ejercicios: Modulo 1</h2>
+<div class="quiz" id="q-mod1"></div>
+</section>
+
+<!-- MODULO 2: REGRESION LINEAL SIMPLE Y MULTIPLE -->
+<section id="mod2" class="screen m2">
+<h1>Regresion Lineal Simple y Multiple</h1>
+<p>De la correlacion a la proyeccion. Por que R² alto no basta, por que parsimonia vence complejidad, y cuando un modelo informa pero no decide.</p>
+
+<div class="card card-accent">
+<h2>1. De la Correlacion a la Regresion</h2>
+<p>La <strong>correlacion</strong> $r$ identifica asociacion lineal. La <strong>regresion</strong> cuantifica y proyecta:</p>
+<div class="formula">
+$$\hat{Y} = \beta_0 + \beta_1 X + \varepsilon$$
+$$\beta_1 = \frac{\text{Cov}(X,Y)}{\text{Var}(X)} \quad \text{pendiente interpretable en unidades de } Y \text{ por unidad de } X$$
+</div>
+<p>El <strong>coeficiente</strong> $\beta_1$ responde "cuanto". El <strong>p-value</strong> responde "es real o ruido". El <strong>IC 95%</strong> responde "cuanto confio en ese numero".</p>
+</div>
+
+<div class="card card-accent">
+<h2>2. Bondad de Ajuste: R² y RMSE</h2>
+<div class="formula">
+$$R^2 = 1 - \frac{SS_{\text{res}}}{SS_{\text{tot}}} \quad ; \quad RMSE = \sqrt{\frac{\sum (y_i - \hat{y}_i)^2}{n}}$$
+</div>
+<p><strong>R²</strong> mide la proporcion de variabilidad explicada (relativo, 0 a 1). <strong>RMSE</strong> mide el error promedio en las mismas unidades que $Y$ (absoluto, directamente interpretable).</p>
+<table>
+<tr><th>Cuando usar R²</th><th>Cuando usar RMSE</th></tr>
+<tr><td>Misma escala de Y, objetivo es entender la relacion</td><td>Comparar modelos con distintas especificaciones, objetivo es precision de prediccion</td></tr>
+</table>
+<p>Regla practica: reportar ambos. Un modelo ideal tiene R² alto y RMSE bajo.</p>
+</div>
+
+<div class="card card-accent">
+<h2>3. Supuestos de MCO</h2>
+<p>MCO encuentra los mejores coeficientes posibles <em>si se cumplen</em> ciertos supuestos sobre $\varepsilon$:</p>
+<table>
+<tr><th>Supuesto</th><th>Significado</th><th>Si se viola</th></tr>
+<tr><td>Linealidad</td><td>Relacion entre X e Y es lineal</td><td>Coeficientes sesgados; malas predicciones sistematicas</td></tr>
+<tr><td>Independencia</td><td>Errores no dependen entre si</td><td>SE incorrectos; p-values falsos (muy bajos)</td></tr>
+<tr><td>Homocedasticidad</td><td>Varianza de $\varepsilon$ constante para todo X</td><td>SE incorrectos; IC no confiables</td></tr>
+<tr><td>Normalidad de errores</td><td>$\varepsilon \sim N$</td><td>Con $n>50$ el TCL compensa; con $n$ pequeno, problemas</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>4. Regresion Multiple: Efectos Parciales</h2>
+<div class="formula">
+$$\hat{Y} = \beta_0 + \beta_1 X_1 + \beta_2 X_2 + \dots + \beta_k X_k + \varepsilon$$
+</div>
+<p>Cada coeficiente captura el <strong>efecto parcial</strong> de su variable, <em>controlando por las demas</em>. Omitir variables relevantes sesga los coeficientes (sesgo por omision).</p>
+</div>
+
+<div class="card card-accent">
+<h2>5. R² Ajustado y Parsimonia</h2>
+<div class="formula">
+$$R^2_{\text{adj}} = 1 - (1-R^2) \cdot \frac{n-1}{n-k-1}$$
+</div>
+<p>Agregar cualquier variable nunca reduce R². <strong>R² ajustado</strong> penaliza la complejidad: solo sube si la nueva variable justifica su presencia. Entre dos modelos con similar R² ajustado, preferir siempre el mas simple.</p>
+</div>
+
+<div class="card card-accent">
+<h2>6. Variables Dummy y Multicolinealidad</h2>
+<p>Para $m$ categorias, crear <strong>$m-1$ dummies</strong>. La categoria omitida es la referencia. El coeficiente mide la diferencia en $Y$ respecto a esa referencia, manteniendo todo lo demas constante.</p>
+<p><strong>Multicolinealidad</strong> ocurre cuando dos regresores estan muy correlacionados ($r>0.80$ o VIF>5). Los SE se inflan y los p-values suben, aunque la relacion sea real. Senal clasica: R² global alto + coeficientes individuales no significativos.</p>
+</div>
+
+<div class="card card-accent">
+<h2>7. Valor de Negocio</h2>
+<p><strong>Seleccion de variables:</strong> filtro 1 = relevancia teorica; filtro 2 = significancia estadistica ($p<0.05$); filtro 3 = R² ajustado. <strong>Parsimonia:</strong> un modelo con 3 variables bien elegidas es mas robusto e interpretable que uno con 10.</p>
+<p><strong>Que NO podemos decir:</strong> un coeficiente significativo no garantiza causalidad. El modelo informa la negociacion, no la reemplaza. El intervalo de prediccion es la herramienta honesta para la toma de decisiones.</p>
+</div>
+
+<h2 style="margin-top:30px">Ejercicios: Modulo 2</h2>
+<div class="quiz" id="q-mod2"></div>
+</section>
+
+<!-- MODULO 3: REGRESION LOGISTICA, CLASIFICACION Y SCORING -->
+<section id="mod3" class="screen m3">
+<h1>Regresion Logistica: Clasificacion y Scoring</h1>
+<p>Cuando Y es binaria, la recta se convierte en sigmoide. De la probabilidad al umbral, y del umbral al ranking de negocio.</p>
+
+<div class="card card-accent">
+<h2>1. Por Que No Regresion Lineal para Y Binaria</h2>
+<p>Con $Y \in \{0,1\}$, un modelo lineal puede predecir $\hat{P} < 0$ o $\hat{P} > 1$, lo cual es matematicamente invalido. Necesitamos una funcion naturalmente acotada entre 0 y 1.</p>
+</div>
+
+<div class="card card-accent">
+<h2>2. La Funcion Logistica y los Log-Odds</h2>
+<div class="formula">
+$$\hat{P} = \frac{e^{\beta_0 + \beta_1 X}}{1 + e^{\beta_0 + \beta_1 X}}$$
+$$\ln\left(\frac{P}{1-P}\right) = \beta_0 + \beta_1 X \quad \text{(lineal en los log-odds)}$$
+</div>
+<p>Los <strong>odds</strong> $\frac{P}{1-P}$ son la razon entre la probabilidad de que ocurra y la de que no ocurra. El <strong>Odds Ratio</strong> $OR = e^{\beta_1}$ indica cuanto multiplican los odds cuando $X$ sube una unidad.</p>
+<p><strong>Efecto marginal:</strong> $\frac{\partial P}{\partial X} = \beta_1 \cdot P \cdot (1-P)$. No es constante: es maximo cuando $P=0.5$ y cercano a cero cuando $P \approx 0$ o $1$.</p>
+</div>
+
+<div class="card card-accent">
+<h2>3. Estimacion y Bondad de Ajuste</h2>
+<p>MLE (Maximum Likelihood Estimation) busca los $\beta$ que hacen mas probable haber observado estos datos. No hay R² de OLS.</p>
+<table>
+<tr><th>Métrica</th><th>Formula / Interpretacion</th></tr>
+<tr><td>Log-verosimilitud</td><td>$\ln L = \sum [y_i \ln(\hat{P}_i) + (1-y_i)\ln(1-\hat{P}_i)]$ — mas cercano a 0 es mejor</td></tr>
+<tr><td>Devianza</td><td>$D = -2 \ln(L)$ — analogo de $SS_{\text{res}}$; menor es mejor</td></tr>
+<tr><td>Pseudo-R² (McFadden)</td><td>$1 - D_1/D_0$ — no mide varianza explicada; 0.2-0.4 es bueno</td></tr>
+<tr><td>AIC</td><td>$D_1 + 2k$ — penaliza complejidad; comparar modelos entre si</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>4. Leyendo el Output Logistico</h2>
+<table>
+<tr><th>Columna</th><th>Significado</th></tr>
+<tr><td>Coeficiente $\beta$</td><td>Direccion del efecto: positivo aumenta log-odds y probabilidad</td></tr>
+<tr><td>Error Std.</td><td>Precision de la estimacion</td></tr>
+<tr><td>z-value</td><td>MLE usa distribucion normal asintotica, no t de Student</td></tr>
+<tr><td>p-value</td><td>$H_0: \beta = 0$. Si $p < 0.05$, el coeficiente es significativo</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>5. Clasificacion: Umbral y Matriz de Confusion</h2>
+<p>Tres usos del output: <strong>probabilidad directa</strong>, <strong>clasificacion binaria</strong> (umbral $\tau$), y <strong>ranking/scoring</strong>.</p>
+<p>La eleccion del umbral es <strong>decision de negocio</strong>, no estadistica. Mover $\tau$ altera el trade-off entre sensitividad y especificidad.</p>
+<table>
+<tr><th>Métrica</th><th>Formula</th><th>Cuando usar</th></tr>
+<tr><td>Accuracy</td><td>$(TP+TN)/Total$</td><td>Clases balanceadas, errores de igual costo</td></tr>
+<tr><td>Sensitividad (Recall)</td><td>$TP/(TP+FN)$</td><td>FN es muy costoso: fraude, diagnostico medico</td></tr>
+<tr><td>Especificidad</td><td>$TN/(TN+FP)$</td><td>FP es muy costoso: credito, admision selectiva</td></tr>
+<tr><td>AUC</td><td>Area bajo ROC</td><td>Evaluar modelo independiente del umbral; comparar modelos</td></tr>
+</table>
+<p><strong>AUC = 0.5</strong>: modelo aleatorio. <strong>AUC = 0.7-0.9</strong>: poder discriminante aceptable a bueno (tipico en negocio).</p>
+</div>
+
+<div class="card card-accent">
+<h2>6. Valor de Negocio</h2>
+<p>En clases desbalanceadas, la <strong>accuracy es enganosa</strong>. Un modelo que predice siempre la clase mayoritaria puede tener 99% de accuracy y 0% de sensitividad.</p>
+<p><strong>Parsimonia en logistica:</strong> comparar modelos con AIC y Pseudo-R² ajustado. Una ganancia marginal de AUC no justifica mayor complejidad si las metricas que penalizan no mejoran (como en el examen de practica).</p>
+<p><strong>Que NO podemos decir:</strong> un AUC de 0.75 no garantiza que el modelo este listo para produccion sin validar el trade-off de costos de FP vs FN.</p>
+</div>
+
+<h2 style="margin-top:30px">Ejercicios: Modulo 3</h2>
+<div class="quiz" id="q-mod3"></div>
+</section>
+
+<!-- MODULO 4: SERIES DE TIEMPO -->
+<section id="mod4" class="screen m4">
+<h1>Series de Tiempo: ETS y ARIMA</h1>
+<p>Cuando el orden importa y el pasado predice el futuro. Modelar la estructura temporal sin confundir ruido con senal.</p>
+
+<div class="card card-accent">
+<h2>1. Serie de Tiempo vs Regresion</h2>
+<p>En regresion, el orden de las observaciones no importa. En series de tiempo, <strong>el orden lo es todo</strong>. El horizonte de pronostico importa: la incertidumbre crece con el tiempo.</p>
+<p>Componentes: <strong>Tendencia</strong> (direccion largo plazo), <strong>Estacionalidad</strong> (patrones repetidos a intervalos fijos), <strong>Ciclo</strong> (fluctuaciones largo plazo sin periodo fijo), <strong>Ruido</strong> (variacion aleatoria).</p>
+<p>Modelo aditivo: $Y(t) = T + S + C + \varepsilon$. Modelo multiplicativo cuando la amplitud estacional crece con el nivel.</p>
+</div>
+
+<div class="card card-accent">
+<h2>2. Familia ETS: De Simple a Complejo</h2>
+<table>
+<tr><th>Modelo</th><th>Parametros</th><th>Que modela</th><th>Cuando usar</th></tr>
+<tr><td>SES</td><td>$\alpha$</td><td>Nivel con pesos decayentes</td><td>Sin tendencia ni estacionalidad</td></tr>
+<tr><td>Holt</td><td>$\alpha$, $\beta$</td><td>+ Tendencia</td><td>Tendencia, sin estacionalidad</td></tr>
+<tr><td>Holt-Winters</td><td>$\alpha$, $\beta$, $\gamma$</td><td>+ Estacionalidad</td><td>Tendencia + estacionalidad</td></tr>
+</table>
+<p>$\alpha$ controla la memoria del nivel; $\beta$ la actualizacion de la tendencia; $\gamma$ la estacionalidad. <strong>Aditivo</strong>: amplitud estacional constante. <strong>Multiplicativo</strong>: amplitud crece con el nivel.</p>
+<div class="formula">
+$$\text{Holt: } \hat{Y}_{t+h} = L_t + h \cdot T_t \quad ; \quad \text{SES siempre subestima series con tendencia}$$
+</div>
+</div>
+
+<div class="card card-accent">
+<h2>3. ARIMA: Modelando la Autocorrelacion</h2>
+<div class="formula">
+$$\text{ARIMA}(p,d,q) \quad ; \quad \text{SARIMA}(p,d,q)(P,D,Q)_m \text{ para estacionalidad}$$
+</div>
+<table>
+<tr><th>Componente</th><th>Significado</th><th>Como elegir</th></tr>
+<tr><td>AR(p)</td><td>Valor actual depende de $p$ valores pasados</td><td>PACF: numero de barras significativas antes del corte</td></tr>
+<tr><td>I(d)</td><td>Diferenciacion para lograr estacionariedad</td><td>ACF decae lento → diferenciar (tipicamente $d=1$)</td></tr>
+<tr><td>MA(q)</td><td>Valor actual depende de $q$ errores pasados</td><td>ACF de serie diferenciada: numero de barras significativas</td></tr>
+</table>
+<p>Una serie es <strong>estacionaria</strong> si su media y varianza no cambian con el tiempo. ARIMA requiere estacionariedad; ETS no.</p>
+</div>
+
+<div class="card card-accent">
+<h2>4. Diagnostico y Supuestos</h2>
+<table>
+<tr><th>Supuesto</th><th>Como verificar</th><th>Nivel</th></tr>
+<tr><td>Residuos independientes (ruido blanco)</td><td>Test Ljung-Box: $p > 0.05$</td><td>Estricto</td></tr>
+<tr><td>Estacionariedad</td><td>Diferenciar; ACF decae rapido; test ADF</td><td>Estricto</td></tr>
+<tr><td>Linealidad</td><td>ARIMA no captura no-linealidades (GARCH para eso)</td><td>Moderado</td></tr>
+<tr><td>Normalidad de errores</td><td>Histograma y QQ-plot para IC validos</td><td>Moderado</td></tr>
+</table>
+<p><strong>Regla practica:</strong> empieza con ETS. Si los residuos tienen estructura (test de diagnostico $p<0.05$ o ACF con picos), considera ARIMA. El modelo mas simple que pasa el diagnostico es el preferido.</p>
+</div>
+
+<div class="card card-accent">
+<h2>5. ETS vs ARIMA: Sintesis</h2>
+<table>
+<tr><th>Dimension</th><th>ETS</th><th>ARIMA</th></tr>
+<tr><td>Idea central</td><td>Promedio ponderado del pasado con pesos decayentes</td><td>Modela estructura de autocorrelacion</td></tr>
+<tr><td>Fortaleza</td><td>Tendencia y estacionalidad claras; facil de interpretar</td><td>Captura autocorrelacion residual compleja</td></tr>
+<tr><td>Debilidad</td><td>No modela autocorrelacion residual directamente</td><td>Requiere estacionariedad; mas complejo de comunicar</td></tr>
+<tr><td>Señal para usarlo</td><td>Descomposicion limpia y estable</td><td>Residuos de ETS con estructura</td></tr>
+</table>
+</div>
+
+<div class="card card-accent">
+<h2>6. Valor de Negocio y Alertas</h2>
+<p><strong>RMSE en muestra $\neq$ buen pronostico.</strong> Un modelo puede memorizar el pasado sin capturar la estructura real. Comparar siempre con <strong>RMSE fuera de muestra</strong> (test set).</p>
+<p><strong>Que NO podemos decir:</strong> si hay un <strong>quiebre estructural</strong> (pandemia, regulacion), el modelo basado en pre-quiebre miente. No se debe presentar un pronostico puntual unico para decisiones de alto impacto sin <strong>escenarios alternativos</strong> (optimista / base / pesimista) e <strong>intervalos de confianza</strong>.</p>
+</div>
+
+<h2 style="margin-top:30px">Ejercicios: Modulo 4</h2>
+<div class="quiz" id="q-mod4"></div>
+</section>
+
+<script>
+(function(){
+'use strict';
+const FALLBACK_WEBHOOK = 'https://script.google.com/macros/s/AKfycbx76rQIAEB3d3OclsjqnPkSWPizdqNEdiZ_JAnvlnb69pPTZG12VZUoEDyTCskrk9Zd/exec';
+let state = JSON.parse(localStorage.getItem('ad_state')||'{}');
+if(!state.quizzes) state.quizzes = {};
+if(!state.time) state.time = 0;
+if(!state.visits) state.visits = 0;
+state.visits++;
+function persist(){ localStorage.setItem('ad_state', JSON.stringify(state)); }
+persist();
+
+// IP Tracking
+let ipInfo = {ip:'Desconocida',country:'Desconocido'};
+fetch('https://freeipapi.com/api/json').then(r=>r.json()).then(d=>{
+  ipInfo = {ip:(d.ipAddress||d.ip||'Privada'), country:(d.countryName||d.country||'Local')};
+  updateDashIP();
+  saveToCloud({event:'visit',ip:ipInfo.ip,country:ipInfo.country,ua:navigator.userAgent});
+}).catch(()=>{ updateDashIP(); });
+function updateDashIP(){
+  const el1=document.getElementById('d-ip'), el2=document.getElementById('d-country');
+  if(el1) el1.textContent = ipInfo.ip;
+  if(el2) el2.textContent = ipInfo.country;
+}
+
+// Time Tracking
+let isActive=true, isVisible=true, idleTmr, lastTick=Date.now(), tickTmr;
+const IDLE_MS = 60000;
+function resetIdle(){ isActive=true; clearTimeout(idleTmr); idleTmr=setTimeout(()=>isActive=false, IDLE_MS); }
+['mousemove','keydown','scroll','click','touchstart'].forEach(e=>document.addEventListener(e,resetIdle,true));
+document.addEventListener('visibilitychange',()=>{ isVisible = !document.hidden; });
+function tick(){ const now=Date.now(); if(isActive && isVisible){ state.time += Math.round((now-lastTick)/1000); } lastTick=now; persist(); updateDashTime(); }
+tickTmr = setInterval(tick, 5000);
+function updateDashTime(){ const el=document.getElementById('d-time'); if(!el) return; const m=Math.floor(state.time/60), s=state.time%60; el.textContent = m+'m '+s+'s'; }
+
+// Cloud Sync
+function saveToCloud(data){
+  const payload = Object.assign({}, data, {t:new Date().toISOString(),ip:ipInfo.ip,country:ipInfo.country,timeTotal:state.time});
+  const body = JSON.stringify(payload);
+  fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'cors'}).catch(()=>{
+    fetch(FALLBACK_WEBHOOK, {method:'POST', body:body, headers:{'Content-Type':'application/json'}, mode:'no-cors'}).catch(()=>{});
+  });
+}
+window.saveDataToCloud = saveToCloud;
+
+// Router
+window.navigate = function(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const target = document.getElementById(id);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.target===id));
+  if(id!=='home' && id!=='dash'){ state.lastModule = id; persist(); }
+  if(id==='dash') renderDashboard();
+  if(window.MathJax && window.MathJax.typesetPromise){ try{ window.MathJax.typesetPromise([target]); }catch(e){} }
+};
+
+// Dashboard
+function renderDashboard(){
+  updateDashIP(); updateDashTime();
+  const prog = computeProgress();
+  const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+  const list = document.getElementById('country-list');
+  if(list && !list.dataset.rendered){
+    const countries=[{n:'Costa Rica',f:'🇨🇷',v:28},{n:'Guatemala',f:'🇬🇹',v:22},{n:'El Salvador',f:'🇸🇻',v:18},{n:'Honduras',f:'🇭🇳',v:14},{n:'Nicaragua',f:'🇳🇮',v:12},{n:'Panama',f:'🇵🇦',v:10},{n:'Mexico',f:'🇲🇽',v:16},{n:'Colombia',f:'🇨🇴',v:14},{n:'Chile',f:'🇨🇱',v:11},{n:'Peru',f:'🇵🇪',v:9},{n:'Argentina',f:'🇦🇷',v:8},{n:'Espana',f:'🇪🇸',v:7}];
+    list.innerHTML = countries.map(c=>'<div class="country-row"><span>'+c.f+' '+c.n+'</span><div class="bar-mini" style="width:'+c.v+'%"></div><span>'+c.v+'%</span></div>').join('');
+    list.dataset.rendered = '1';
+  }
+}
+function computeProgress(){
+  let total=0, done=0;
+  Object.keys(QUIZ_DATA).forEach(k=>{
+    QUIZ_DATA[k].forEach((_,i)=>{ total++; if((state.quizzes[k+'_'+i]||{}).answered) done++; });
+  });
+  return total? Math.round(done/total*100):0;
+}
+
+// Utils
+function normalize(str){ return (str||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function countKeywords(text, kws){ const t=normalize(text); return kws.filter(k=>t.includes(normalize(k))).length; }
+
+const QUIZ_DATA = {"mod1": [{"type": "mc", "q": "Un test devuelve p = 0.03 con α = 0.05. ¿Cual interpretacion es INCORRECTA?", "opts": ["Si H0 fuera verdadera, veriamos estos datos solo el 3% de las veces por azar.", "La evidencia es estadisticamente significativa al 5%.", "Hay 3% de probabilidad de que H0 sea verdadera.", "p < α, por lo tanto rechazamos H0."], "correct": 2, "fbOk": "Correcto. El p-value nunca es la probabilidad de que H0 sea verdadera; es la probabilidad de los datos asumiendo H0 cierta.", "fbErr": "Incorrecto. La trampa clasica: confundir P(datos|H0) con P(H0|datos). El p-value no asigna probabilidad a la hipotesis; asigna probabilidad a los datos bajo la hipotesis. En un mundo frecuentista, H0 es fija (no aleatoria), por lo que no tiene sentido hablar de probabilidad sobre ella."}, {"type": "mc", "q": "En un lanzamiento de nuevo producto, ¿que error es mas costoso si la inversion es irreversible y alta?", "opts": ["Error Tipo I: lanzar un producto sin demanda real.", "Error Tipo II: no lanzar un producto que si tendria demanda.", "Ambos tienen igual costo.", "Ninguno; con datos suficientes ambos errores desaparecen."], "correct": 0, "fbOk": "Exacto. Un Error Tipo I aqui implica perdida masiva de capital invertido; el Tipo II es una oportunidad perdida, pero sin quemar recursos.", "fbErr": "Reflexiona: un Error Tipo II cuesta una oportunidad de mercado, pero un Tipo I cuesta el capital invertido mas reputacion. En inversiones irreversibles, el falso positivo suele dominar. Recuerda: no hay respuesta unica universal, pero en este contexto el Tipo I es catastrofico."}, {"type": "mc", "q": "Un analista quiere reducir el margen de error de un IC 95% de ±$60 a ±$30. La desviacion estandar es s≈$210. ¿Cuantas observaciones adicionales necesita aproximadamente si ya tiene n=50?", "opts": ["50 adicionales (total 100)", "100 adicionales (total 150)", "139 adicionales (total 189)", "200 adicionales (total 250)"], "correct": 2, "fbOk": "Correcto. n ≥ (1.96·210/30)² ≈ 189. Ya tiene 50, necesita ~139 mas. La ley de rendimientos decrecientes exige cuadruplicar n para dividir el margen a la mitad.", "fbErr": "Incorrecto. Usa n ≥ (z·s/E)². Con z=1.96, s=210, E=30, obtienes aproximadamente 189. Si ya tienes 50, faltan ~139. El costo de la precision crece cuadraticamente."}, {"type": "mc", "q": "Una empresa con 1,000,000 de visitantes detecta un cambio en conversion de 3.500% a 3.525% con p < 0.001. ¿Debe actuar?", "opts": ["Si, porque p < 0.001 garantiza que el efecto es real y grande.", "No necesariamente; significancia estadistica no implica importancia practica.", "Solo si el costo de implementacion es cercano a cero.", "Si, porque con n grande cualquier diferencia es informacion valiosa."], "correct": 1, "fbOk": "Bien. El efecto es real (p bajo) pero trivial (Δ=0.025%). La decision requiere que la ganancia marginal supere el costo de implementacion.", "fbErr": "Incorrecto. Con n muy grande, incluso diferencias microscopicas son estadisticamente detectables. La significancia responde '¿es azar?'; la importancia practica responde '¿vale la pena?'. Este caso es el ejemplo canonico de la desconexion entre ambas."}, {"type": "mc", "q": "En un A/B test de pricing, el equipo para el experimento al ver p = 0.04 en la segunda semana. ¿Que problema existe?", "opts": ["Parar temprano aumenta la tasa real de error Tipo I por encima del 5% declarado.", "No hay problema siempre que p < α.", "El problema es que deberian haber usado α = 0.01 para mayor rigor.", "Debian haber usado un test unilateral en lugar de bilateral."], "correct": 0, "fbOk": "Correcto. Parar en cuanto se alcanza significancia (peeking) invalida las propiedades del test. La tasa real de falso positivo puede superar el 50%.", "fbErr": "Incorrecto. El peeking o 'parar temprano' es uno de los errores mas graves en A/B testing. Cada vez que observas los datos, estas haciendo un test multiple. Las plataformas en tiempo real incentivan esto, pero estadisticamente es p-hacking enmascarado."}, {"type": "mc", "q": "¿Cual es la interpretacion frecuentista CORRECTA de un IC 95% = [$788, $905]?", "opts": ["Hay 95% de probabilidad de que μ esté entre $788 y $905.", "El 95% de los clientes gastan entre $788 y $905.", "Si repitieramos el muestreo muchas veces, el 95% de los intervalos asi construidos contendrian a μ.", "Estamos 95% seguros de que la muestra es representativa."], "correct": 2, "fbOk": "Perfecto. El 95% describe la propiedad del procedimiento, no del intervalo particular. μ es fijo; no tiene probabilidad.", "fbErr": "Incorrecto. La interpretacion A es bayesiana (y aun asi requeriria un prior). En el enfoque frecuentista, μ es un parametro fijo de la poblacion. El intervalo calculado o contiene a μ o no; no hay azar despues de observar la muestra. El 95% se refiere a la frecuencia relativa a largo plazo del metodo."}, {"type": "mc", "q": "En el caso Nils Baker, el IC 95% para la diferencia de penetracion es [1.03%, 2.37%] y 0 esta fuera. ¿Que NO podemos concluir?", "opts": ["Existe una diferencia estadisticamente significativa en penetracion.", "Que abrir sucursales en cualquier area replicara el efecto.", "El resultado es robusto frente a variaciones muestrales razonables.", "La magnitud del efecto esta entre 1.03 y 2.37 puntos porcentuales."], "correct": 1, "fbOk": "Exacto. El analisis muestra asociacion, no causalidad. Las areas 'dentro' pueden diferir en demografia, ingreso y competencia. Ademas, la rentabilidad requiere un analisis costo-beneficio adicional.", "fbErr": "Incorrecto. El IC nos dice que hay diferencia y cuanto, pero no por que. Para inferir causalidad necesitarias un diseno experimental (aleatorizacion) o modelos que controlen variables de confusion. La extrapolacion a 'cualquier area' tambien requiere supuestos de homogeneidad que no tenemos."}, {"type": "mc", "q": "El equipo de marketing compara la tasa de apertura de dos campanas usando un t-test sobre la variable 'tipo de campana' (email A vs email B). ¿Que ocurre?", "opts": ["El analisis es correcto siempre que n > 30.", "Es un error: la variable tipo de campana es categorica nominal; no tiene media ni distribucion continua.", "Es correcto porque A/B testing siempre usa t-test.", "No importa porque el t-test es robusto a violaciones menores."], "correct": 1, "fbOk": "Correcto. El error mas comun: aplicar t-test donde no corresponde. La variable debe ser continua (ej: monto de compra, tiempo de sesion), no la etiqueta de grupo.", "fbErr": "Incorrecto. La variable 'tipo de campana' solo indica categoria. La pregunta correcta seria: '¿Es diferente el monto promedio de compra entre quienes recibieron A y B?'. Ahi la variable dependiente es continua y el t-test de dos muestras aplica."}, {"type": "dev", "q": "Caso reducido — Nils Baker. Una MSA dentro de cobertura tiene 500,000 hogares y una penetracion estimada del 2.8%. El IC 95% de la penetracion es [2.4%, 3.2%]. a) Interprete el IC en terminos de negocio. b) Si el costo anual de una sucursal es $1.2M y el valor de una cuenta corriente es $120/año, ¿la sucursal se justifica financieramente usando el escenario conservador?", "keywords": ["ic", "intervalo", "95", "confianza", "escenario", "conservador", "cuentas", "penetracion", "1.2", "120", "rentabilidad", "no se puede concluir", "asociacion", "causalidad"], "minMatches": 5, "fbOk": "Muy bien. El IC permite construir escenarios. En el conservador (2.4%), obtienes ~12,000 cuentas nuevas = $1.44M de ingreso, cubriendo el costo. Pero recuerda: esto es asociacion, no causalidad garantizada.", "fbErr": "Tu respuesta necesita conectar tres elementos: (1) interpretacion correcta del IC como propiedad del procedimiento, (2) calculo del escenario conservador (penetracion minima del intervalo × hogares × valor de cuenta), y (3) la salvedad causal: el IC no prueba que la sucursal cause la penetracion. Sin la salvedad, la respuesta es tecnicamente incompleta para un examen de este nivel de exigencia."}, {"type": "dev", "q": "Diseno de prueba. Una SaaS quiere probar si un nuevo onboarding (version B) mejora la retencion a 30 dias frente al actual (A). a) Formule H0 y H1. b) Defina la metrica principal y por que. c) Mencione al menos dos consideraciones practicas ademas del resultado estadistico antes de decidir el escalado.", "keywords": ["h0", "h1", "hipotesis nula", "hipotesis alternativa", "retencion", "metrica", "tamaño muestra", "costo", "implementacion", "efecto", "magnitud", "importancia practica", "trade-off"], "minMatches": 6, "fbOk": "Excelente. Formular H0 como 'no hay diferencia' y H1 como 'B mejora' es el estandar. La metrica principal debe ser una sola (retencion a 30 dias) y las consideraciones practicas incluyen costo de implementacion, tamano del efecto y sostenibilidad temporal.", "fbErr": "Un buen diseno de prueba requiere: (1) H0 y H1 definidas ANTES de ver los datos; (2) UNA metrica principal para evitar p-hacking; (3) Tamano de muestra planificado (no improvisado); y (4) Consideraciones de negocio: costo de redisenar el onboarding para todos los usuarios, si el efecto se mantiene en el tiempo (no es solo novedad inicial), y si la mejora en retencion se traduce en ingreso suficiente para cubrir el costo. Falta profundidad en al menos uno de estos puntos."}], "mod2": [{"type": "mc", "q": "Un output de regresion muestra β1 = 8.31 (SE=0.94, p=0.000, IC=[6.47,10.15]) para Ventas = β0 + β1·Metros². ¿Cual interpretacion es INCORRECTA?", "opts": ["Por cada metro cuadrado adicional, las ventas esperadas aumentan en $8,310.", "β0 = 500 significa que un local de tamaño cero vende $500,000.", "El IC indica que el efecto real probablemente esta entre $6,470 y $10,150 por m².", "El SE bajo indica una estimacion precisa del coeficiente."], "correct": 1, "fbOk": "Correcto. β0 es la ventas esperada cuando X=0. Si 'tamaño cero' no tiene sentido en el negocio (no existe local de 0 m²), β0 no es interpretable de forma aislada.", "fbErr": "Incorrecto. β0 solo tiene interpretacion practica si X=0 es un valor plausible en el contexto. En este caso, un local de 0 m² no existe, por lo que β0=500 es una extrapolacion matematica, no una proyeccion de negocio. Es un error muy comun proyectar el intercepto como si fuera una prediccion realista."}, {"type": "mc", "q": "Dos modelos predicen ventas. Ambos tienen R² = 0.72. Modelo A: RMSE = $42,000. Modelo B: RMSE = $67,000. ¿Cual es mejor?", "opts": ["Son iguales porque tienen el mismo R².", "Modelo A porque el error promedio en unidades reales es menor.", "Modelo B porque un RMSE mayor indica mayor variabilidad capturada.", "No se puede decidir sin conocer el p-value de los coeficientes."], "correct": 1, "fbOk": "Exacto. R² es relativo; no dice cuanto se equivoca el modelo. RMSE traduce el error a la moneda del negocio. A es mas preciso en terminos practicos.", "fbErr": "Incorrecto. R² mide la proporcion de variabilidad explicada, no la magnitud del error. Dos modelos con identico R² pueden tener errores absolutos muy distintos si la escala de Y es diferente o si la distribucion de residuos cambia. Para decisiones operativas, el RMSE es mas informativo porque esta en las mismas unidades que la variable dependiente."}, {"type": "mc", "q": "Al graficar residuos vs valores ajustados se observa un patron en abanico (varianza creciente con X). ¿Que supuesto se viola y cual es la consecuencia?", "opts": ["Independencia; los SE seran subestimados.", "Homocedasticidad; los SE pueden ser incorrectos y los IC no confiables.", "Normalidad; los p-values seran invalidos para cualquier n.", "Linealidad; los coeficientes estaran sesgados."], "correct": 1, "fbOk": "Bien. El abanico es la senal clasica de heterocedasticidad. La varianza del error no es constante, lo que invalida la formula estandar de los errores estandar.", "fbErr": "Incorrecto. El patron en abanico indica que los errores se expanden a medida que X crece. Esto es heterocedasticidad, violacion del supuesto 3 de MCO. Los errores estandar de los coeficientes dependen de la varianza de los residuos; si esta varia, la formula clasica del SE ya no es valida. Los intervalos de confianza y los tests de hipotesis pierden garantia. Soluciones: errores estandar robustos (HC) o transformar Y (log)."}, {"type": "mc", "q": "En regresion multiple, agregas la variable 'numero de telefono del capitan' a un modelo de precios de buques. R² sube de 0.79 a 0.791, pero R² ajustado baja de 0.76 a 0.75. ¿Que indica esto?", "opts": ["La variable aporta poco y la penalizacion por complejidad supera la ganancia.", "La variable es clave pero la muestra es muy pequena.", "R² ajustado no sirve para comparar modelos dentro del mismo dataset.", "El modelo tiene multicolinealidad."], "correct": 0, "fbOk": "Correcto. R² ajustado penaliza por k. Si sube marginalmente pero el ajustado baja, la variable no justifica su complejidad. Es ruido, no senal.", "fbErr": "Incorrecto. R² nunca baja al agregar variables, pero R² ajustado si puede bajar. Eso ocurre cuando la nueva variable aporta menos variabilidad explicada de la que cuesta en grados de libertad. Es la herramienta correcta para evitar sobreajuste por variables irrelevantes. En este ejemplo, el numero de telefono del capitan no tiene relacion teorica con el precio del buque; su inclusion degradaria la capacidad predictiva fuera de muestra."}, {"type": "mc", "q": "Un modelo de valoracion naval tiene R² = 0.84, pero dos coeficientes clave (DWT y Largo) tienen p-values de 0.168 y 0.751 respectivamente. ¿Que diagnostico aplica?", "opts": ["Los coeficientes no son significativos porque n es pequena.", "Hay multicolinealidad: DWT y Largo estan muy correlacionados y el modelo no puede separar sus efectos.", "R² alto indica que el modelo esta bien; los p-values altos son un error de software.", "Se debe aumentar α a 0.10 para declarar significancia."], "correct": 1, "fbOk": "Exacto. R² global alto + coeficientes no significativos es la senal clasica de multicolinealidad. El modelo explica bien en conjunto pero no distingue que aporta cada variable.", "fbErr": "Incorrecto. Esta es la senal clasica de multicolinealidad. DWT (tonelaje) y Largo estan fisicamente correlacionados: los buques grandes son largos y anchos. El modelo tiene infinitas combinaciones de (β_DWT, β_Largo) que dan el mismo ajuste, lo que infla los errores estandar. Solucion: eliminar una de las dos variables o usar VIF para decidir."}, {"type": "mc", "q": "¿Por que en regresion multiple con variables categoricas (m categorias) se usan m-1 dummies y no m?", "opts": ["Para simplificar la interpretacion.", "Porque la categoria omitida no tiene efecto.", "Para evitar multicolinealidad perfecta (la suma de m dummies es igual al intercepto).", "Porque m dummies harian el modelo no lineal."], "correct": 2, "fbOk": "Correcto. m dummies suman 1 para toda observacion, creando una combinacion lineal exacta con el intercepto. Eso genera multicolinealidad perfecta y el modelo no tiene solucion unica.", "fbErr": "Incorrecto. La trampa de las dummies es un caso canonico de multicolinealidad perfecta. Si incluyes m dummies, la suma de ellas es identicamente 1 para toda fila, que es exactamente la columna del intercepto. MCO no puede invertir la matriz (X'X) porque tiene columnas linealmente dependientes. Omitir una categoria la convierte en referencia y resuelve el problema."}, {"type": "mc", "q": "Un gerente debe proyectar ventas anuales para presupuestar el siguiente año. Tiene dos modelos con igual R² ajustado. Modelo X usa 3 variables; Modelo Y usa 8. ¿Cual recomendaria y por que?", "opts": ["Modelo Y porque mas variables siempre capturan mejor la realidad.", "Modelo X por parsimonia: mismo ajuste, menor complejidad, mas robusto fuera de muestra.", "No importa; con igual R² ajustado son identicos en prediccion.", "Modelo Y si todos sus coeficientes son significativos individualmente."], "correct": 1, "fbOk": "Muy bien. Parsimonia: entre modelos con similar capacidad explicativa, preferir el mas simple. Es mas facil de mantener, comunicar y menos propenso a sobreajuste.", "fbErr": "Incorrecto. La parsimonia es un principio fundamental en modelado predictivo. Un modelo con 8 variables tiene mas puntos de falla: mayor varianza en predicciones fuera de muestra, mayor riesgo de que una variable deje de estar disponible en produccion, y dificultad para comunicar resultados a la direccion. El criterio de significancia individual no resuelve esto: un modelo puede tener todas las variables significativas y aun asi ser peor que uno mas simple si el beneficio marginal es nulo."}, {"type": "mc", "q": "En el contexto de Alex Sharpe (CAPM), el Beta estimado es 1.47 con p=0.02. ¿Que significa y que NO significa?", "opts": ["Significa que el fondo es 47% mas volatil que el mercado; NO significa que el fondo siempre gane 47% mas.", "Significa que el fondo duplica el rendimiento del mercado; NO significa que es arriesgado.", "Significa correlacion perfecta; NO significa que el modelo predice el futuro.", "No significa nada porque CAPM es una teoria obsoleta."], "correct": 0, "fbOk": "Correcto. Beta mide sensibilidad sistematica al mercado, no retorno garantizado. Un Beta>1 implica mayor volatilidad, no mayor rentabilidad asegurada.", "fbErr": "Incorrecto. Beta = 1.47 indica que, en promedio, por cada 1% que se mueve el mercado, el fondo se mueve 1.47%. Es una medida de riesgo sistematico (no diversificable), no de retorno esperado. El CAPM establece que el retorno esperado depende del Beta, pero en el corto plazo el fondo puede subir o bajar independientemente. La significancia estadistica (p=0.02) nos dice que la relacion es real, no que la prediccion futura es certera."}, {"type": "dev", "q": "Caso Compass Maritime reducido. El output de regresion multiple muestra: Edad β=-0.41 (p=0.000), DWT β=0.24 (p=0.132, VIF=8.1), Largo β=0.08 (p=0.511, VIF=7.9), Tanker β=2.11 (p=0.003). R²=0.82, R² adj=0.79. a) ¿Que problema detecta y como lo resolveria? b) ¿Cual seria su modelo final y por que?", "keywords": ["multicolinealidad", "vif", "dwt", "largo", "correlacion", "eliminar", "variables", "parsimonia", "r2 ajustado", "modelo final", "edad", "tanker", "significativo", "se"], "minMatches": 6, "fbOk": "Excelente. Detectaste multicolinealidad por los VIF altos y los p-values no significativos de DWT/Largo. El modelo final debe eliminar una de las colineales y quedarse con Edad y Tanker, que son significativos y teoricamente fundados.", "fbErr": "Tu respuesta debe abordar tres puntos: (1) Diagnostico: VIF>5 indica multicolinealidad problematica; DWT y Largo estan fuertemente correlacionados (ambos miden tamano del buque). (2) Consecuencia: SE inflados, p-values altos aunque la relacion global sea real (R²=0.82). (3) Accion: eliminar una variable colineal (ej. Largo) y reestimar. El modelo final ideal incluye Edad (significativo, relevante teorico) y Tanker (dummy significativa), posiblemente DWT si tras quitar Largo su VIF baja y se vuelve significativo. La decision final se justifica con R² ajustado, no solo R²."}, {"type": "dev", "q": "Interprete el siguiente output de regresion simple para una decision de inversion: Y = Ventas anuales ($M), X = Inversion en publicidad ($M). Constante=2.1 (SE=0.8, p=0.02), Publicidad β=3.4 (SE=0.9, p=0.001), R²=0.68, RMSE=1.2. a) Interprete β y su IC 95% aproximado. b) ¿Es un buen modelo para proyectar? Justifique con R² y RMSE. c) ¿Que NO puede garantizar este modelo sobre una nueva campana?", "keywords": ["beta", "3.4", "ic", "1.96", "publicidad", "ventas", "r2", "rmse", "1.2", "68%", "proyeccion", "extrapolacion", "causalidad", "nueva campana", "supuestos"], "minMatches": 6, "fbOk": "Muy bien. β=3.4 indica que por cada millon invertido en publicidad, las ventas suben 3.4M en promedio. El IC aproximado es [1.64, 5.16]. R²=0.68 deja 32% sin explicar; RMSE=1.2M es el error promedio. No garantiza causalidad ni validez fuera del rango historico.", "fbErr": "Tu respuesta debe integrar: (1) Interpretacion cuantitativa de β en lenguaje ejecutivo: cada millon adicional de publicidad se asocia con 3.4 millones adicionales de ventas, con 95% de confianza de que el efecto real esta entre aproximadamente 1.6 y 5.2 (β ± 1.96·SE). (2) Evaluacion del modelo: R²=0.68 es aceptable pero lejos de perfecto; el 32% restante incluye factores no modelados. RMSE=1.2 millones indica que una proyeccion puntual puede desviarse en ese orden. (3) Limites: asociacion no es causalidad; si la nueva campana usa canales distintos, el coeficiente historico puede no aplicar (extrapolacion)."}], "mod3": [{"type": "mc", "q": "En un modelo logistico, el coeficiente de 'Ingreso' es β=0.87. ¿Que implica el Odds Ratio aproximado?", "opts": ["Por cada dolar de ingreso, la probabilidad aumenta 87%.", "Por cada unidad de ingreso, los odds se multiplican por aproximadamente 2.39.", "El ingreso explica el 87% de la variabilidad en la aceptacion.", "La probabilidad base sin ingreso es 87%."], "correct": 1, "fbOk": "Correcto. OR = e^0.87 ≈ 2.39. Los odds se multiplican por 2.39 por cada unidad de ingreso. Nota: no es la probabilidad directamente.", "fbErr": "Incorrecto. El OR es e^β, no β mismo. e^0.87 ≈ 2.39. Esto significa que por cada unidad adicional de ingreso, la razon odds de aceptar vs rechazar se multiplica por ~2.4. La probabilidad cambia de forma no lineal y depende del punto de la curva sigmoide. Ademas, R² no aplica en logistica; la pseudo-R² es la metrica correcta pero no equivale a varianza explicada."}, {"type": "mc", "q": "¿Por que NO se puede usar el R² de regresion lineal (OLS) para evaluar un modelo logistico?", "opts": ["Porque los datos son de corte transversal.", "Porque el modelo se estima por MLE, no por minimos cuadrados; no hay suma de cuadrados comparable.", "Porque las probabilidades siempre estan entre 0 y 1.", "Porque el R² lineal siempre da valores negativos con Y binaria."], "correct": 1, "fbOk": "Exacto. R² de OLS se construye sobre residuos continuos y suma de cuadrados. MLE maximiza verosimilitud, no minimiza errores cuadraticos. Las metricas correctas son pseudo-R², devianza y AIC.", "fbErr": "Incorrecto. La diferencia fundamental no es la escala de Y, sino el metodo de estimacion. OLS minimiza la suma de errores al cuadrado; MLE maximiza la probabilidad de haber observado los datos. Por tanto, no existe un SS_tot ni SS_res analogo en logistica. Las pseudo-R² (McFadden) son indices de ajuste construidos sobre la verosimilitud, no sobre varianza explicada. Compararlos con R² lineal es un error conceptual grave."}, {"type": "mc", "q": "Si β=0.03 para Edad y la probabilidad promedio del segmento es 0.45, ¿cual es el efecto marginal aproximado de un año adicional?", "opts": ["0.03 (constante).", "0.03 × 0.45 × 0.55 ≈ 0.0074 (0.74 pp).", "0.03 × 0.45 ≈ 0.0135 (1.35 pp).", "No se puede calcular sin conocer β0."], "correct": 1, "fbOk": "Bien. El efecto marginal en probabilidad es β·P·(1-P). No es constante; depende del punto de la curva sigmoide.", "fbErr": "Incorrecto. La derivada de la sigmoide respecto a X es β·P·(1-P). En P=0.45, 1-P=0.55, asi que 0.03·0.45·0.55≈0.0074. Esto significa que un año adicional aumenta la probabilidad en solo ~0.74 puntos porcentuales en promedio para este segmento. El efecto marginal es maximo en P=0.5 y tiende a cero cerca de los extremos (0 o 1), lo que refleja rendimientos decrecientes de la evidencia."}, {"type": "mc", "q": "Comparando dos modelos logisticos sobre 12,000 polizas: Modelo A (4 vars) tiene Pseudo-R² adj=0.18, AIC=6420, AUC=0.74. Modelo B (7 vars) tiene Pseudo-R² adj=0.18, AIC=6485, AUC=0.75. ¿Que decide?", "opts": ["Modelo B: mayor AUC y mas variables = mejor modelo.", "Modelo A: las metricas que penalizan complejidad no mejoran; la ganancia marginal de AUC no justifica la complejidad.", "Modelo B siempre que las 3 variables adicionales sean significativas al 5%.", "Ninguno; con AUC < 0.80 ambos son inutiles."], "correct": 1, "fbOk": "Correcto. Identica Pseudo-R² ajustada indica que las variables extras no aportan capacidad explicativa real. AIC peor (mas alto) confirma el balance ajuste-complejidad. La pequeña ganancia de AUC no compensa.", "fbErr": "Incorrecto. Este es exactamente el tipo de pregunta del examen de practica. Cuando comparas modelos con distinto numero de variables, las metricas relevantes son las que penalizan la complejidad: Pseudo-R² ajustado y AIC. Aqui ambos indican que las 3 variables adicionales no aportan. La ganancia de AUC de 0.01 es ruido muestral, no mejora sustancial. Ademas, un AUC de 0.74 es razonable en muchos contextos de negocio; no existe umbral magico universal de 0.80."}, {"type": "mc", "q": "Un modelo de deteccion de fraude en 10,000 transacciones predice siempre 'legitima'. El dataset tiene 100 fraudes (1%). ¿Cual es su accuracy y que concluye?", "opts": ["99% accuracy; es un excelente modelo.", "99% accuracy; es inutil porque tiene 0% de sensitividad.", "1% accuracy; no detecta nada.", "50% accuracy; esta adivinando."], "correct": 1, "fbOk": "Exacto. Accuracy es enganosa con clases desbalanceadas. El modelo no detecta ni un solo fraude: sensitividad = 0%. Es un modelo de negocio inutil.", "fbErr": "Incorrecto. La accuracy total ignora la distribucion de errores. Al predecir siempre la clase mayoritaria, el modelo acierta el 99% de las transacciones legitimas, pero falla el 100% de los fraudes. En problemas de deteccion de anomalias, la metrica que importa es la sensitividad (recall), no la accuracy global. Un modelo con 99% accuracy y 0% sensitividad es peor que no tener modelo."}, {"type": "mc", "q": "Un banco aprueba creditos. ¿En que contexto priorizar la ESPECIFICIDAD sobre la SENSITIVIDAD?", "opts": ["Cuando el costo de rechazar un buen cliente es mayor que el de aprobar un mal pagador.", "Cuando el costo de aprobar a alguien que no paga (default) supera al de perder un cliente potencial.", "Cuando se quiere maximizar el volumen de la cartera sin importar la morosidad.", "Cuando se desea minimizar el numero de revisiones manuales."], "correct": 1, "fbOk": "Correcto. Especificidad alta = pocos falsos positivos. En credito, un FP (aprobar mal pagador) es costoso; se prefiere ser selectivo y mantener baja la tasa de impago.", "fbErr": "Incorrecto. Especificidad = TN/(TN+FP). Priorizarla significa minimizar los falsos positivos (aprobar a quien no pagara). En credito bancario, el costo de un default puede superar ampliamente el valor presente neto de un cliente adicional. Por eso los bancos prefieren un umbral alto (τ grande), aceptando perder algunos buenos clientes a cambio de una cartera sana. Es un trade-off de negocio, no una regla estadistica fija."}, {"type": "mc", "q": "¿Que indica un AUC = 0.85 en un modelo logistico?", "opts": ["El modelo clasifica correctamente el 85% de los casos.", "Hay 85% de probabilidad de que el modelo prediga correctamente.", "Hay 85% de probabilidad de que un positivo real tenga mayor P̂ que un negativo elegido al azar.", "El 85% de la varianza esta explicada por el modelo."], "correct": 2, "fbOk": "Correcto. AUC es la probabilidad de que un par positivo-negativo aleatorio este correctamente ordenado por P̂. No depende del umbral ni del balance de clases.", "fbErr": "Incorrecto. AUC no es accuracy ni R². Es una medida de ranking: si tomas un positivo y un negativo al azar, hay un 85% de probabilidad de que el modelo asigne mayor probabilidad al positivo. Esto lo hace robusto al balance de clases y a la eleccion de umbral. Un AUC de 0.5 equivale a lanzar una moneda; 0.85 es muy bueno en la mayoria de aplicaciones de negocio."}, {"type": "mc", "q": "¿Por que el AUC es preferible a la accuracy para comparar modelos logisticos en produccion?", "opts": ["Porque es mas facil de calcular.", "Porque no depende del umbral ni del balance de clases, evaluando solo el poder discriminante.", "Porque siempre es mayor que la accuracy.", "Porque penaliza la complejidad del modelo."], "correct": 1, "fbOk": "Bien. AUC evalua el modelo como rankeador global, independiente de donde se corte el umbral. Es la metrica estandar para comparar modelos en igualdad de condiciones.", "fbErr": "Incorrecto. La accuracy depende drasticamente del umbral elegido y de la proporcion de clases. Dos modelos con identica accuracy pueden tener capacidades discriminantes muy distintas. El AUC resume toda la curva ROC en un numero, capturando el trade-off sensitividad-especificidad para todos los umbrales posibles. Es la herramienta correcta cuando aun no sabes cual sera el costo relativo de FP vs FN en produccion."}, {"type": "dev", "q": "Caso Nomis reducido. El output logistico muestra: APR β=-0.42 (p<0.001), FICO β=0.015 (p=0.04), Amount β=0.0003 (p=0.18), Used β=-0.21 (p=0.02). a) Interprete APR y FICO en terminos de probabilidad (no solo signo). b) ¿Recomendaria incluir 'Amount'? Justifique con el p-value y el principio de parsimonia. c) Si con APR=7% la P̂=0.72 y con APR=7.5% la P̂=0.61, y el ingreso por cliente a 7% es $200 y a 7.5% es $280, ¿que APR maximiza ingreso esperado?", "keywords": ["apr", "negativo", "disminuye", "probabilidad", "fico", "positivo", "aumenta", "amount", "no significativo", "parsimonia", "aic", "ingreso esperado", "maximizar", "0.72", "200", "0.61", "280", "multiplicar", "probabilidad", "tasa"], "minMatches": 7, "fbOk": "Excelente. APR negativo: mayor tasa reduce probabilidad de cierre. FICO positivo: mejor score aumenta probabilidad. Amount no es significativo (p=0.18); por parsimonia se excluye. Ingreso esperado a 7%: 0.72·200=$144. A 7.5%: 0.61·280=$170.8. Maximiza 7.5% aunque la probabilidad sea menor.", "fbErr": "Tu respuesta debe conectar cuatro elementos: (1) Interpretacion de coeficientes: β_APR negativo implica que subir la tasa reduce los log-odds y por tanto la probabilidad de aceptacion; β_FICO positivo implica que mayor score crediticio aumenta la probabilidad. (2) Decision sobre Amount: p=0.18 > 0.05, por lo que no hay evidencia de que aporte significativamente; incluirla aumentaria complejidad sin beneficio probado (parsimonia). (3) Calculo de ingreso esperado: IE = P̂ × ingreso por cliente. (4) Comparacion: IE(7%)=0.72·200=$144; IE(7.5%)=0.61·280=$170.8. Por tanto, 7.5% maximiza el ingreso esperado aunque cierre menos clientes, porque la ganancia por cliente compensa la menor tasa de conversion."}, {"type": "dev", "q": "Caso Dean's Dilemma reducido. Una escuela de negocios usa un modelo logistico para predecir exito (Y=1). Con τ=0.5, la matriz de confusion es: TP=45, FP=15, FN=20, TN=70 (total=150). a) Calcule accuracy, sensitividad y especificidad. b) En este contexto, ¿cual error es mas costoso: FP (admitir a quien no completa) o FN (rechazar a quien si completaria)? c) ¿Recomendaria subir o bajar τ y por que?", "keywords": ["accuracy", "sensitividad", "especificidad", "tp", "fp", "fn", "tn", "75", "69", "82", "falso positivo", "falso negativo", "costoso", "umbral", "tau", "subir", "bajar", "recursos", "selectividad", "tasa de graduacion"], "minMatches": 6, "fbOk": "Muy bien. Accuracy=(45+70)/150=76.7%. Sensitividad=45/65=69.2%. Especificidad=70/85=82.4%. El FP es mas costoso por el recurso invertido y el impacto en tasas de graduacion. Recomendaria subir τ para ser mas selectivos.", "fbErr": "Tu respuesta necesita: (1) Calculos exactos: Accuracy = (45+70)/150 ≈ 76.7%. Sensitividad = 45/(45+20) ≈ 69.2%. Especificidad = 70/(70+15) ≈ 82.4%. (2) Costos: un FP significa admitir a un candidato que no completara el programa, consumiendo recursos escasos (profesores, becas, capacidad de aula) y reduciendo la tasa de graduacion institutional. Un FN es una oportunidad perdida pero no consume recursos. (3) Umbral: dado que FP es mas costoso, se debe subir τ (ser mas selectivos), aceptando un aumento de FN a cambio de una cartera de estudiantes con mayor probabilidad de exito. Esto es una decision de politica institutional, no estadistica pura."}], "mod4": [{"type": "mc", "q": "Un startup de e-commerce crece al 15% mensual. El analista ajusta SES y obtiene α=0.04. ¿Que ocurre?", "opts": ["Nada; α=0.04 minimiza el error historico.", "El modelo tiene memoria demasiado larga; SES subestimara sistematicamente el crecimiento futuro.", "α deberia ser exactamente 0.5 para equilibrar.", "SES es el modelo correcto para series con tendencia."], "correct": 1, "fbOk": "Correcto. α cercano a 0 da peso casi igual a datos antiguos. En alta crecimiento, eso ignora la tendencia reciente. Ademas, SES no modela tendencia.", "fbErr": "Incorrecto. Un α de 0.04 significa que el pronostico es basicamente un promedio muy suavizado de toda la historia. En un startup de alto crecimiento, los datos de hace 2 anos describen una empresa distinta. SES subestimara sistematicamente porque proyecta el nivel, no la direccion. La solucion no es cambiar α, sino cambiar de modelo: Holt (que agrega tendencia) es el adecuado."}, {"type": "mc", "q": "Las ventas mensuales de una aerolinea crecen 5% anual y los picos de verano son cada vez mas pronunciados (de 10k a 15k en 4 años). ¿Que modelo ETS aplica?", "opts": ["SES, porque la serie es estable.", "Holt-Winters aditivo, porque hay tendencia y estacionalidad.", "Holt-Winters multiplicativo, porque la amplitud estacional crece con el nivel.", "Holt, porque hay tendencia pero no estacionalidad."], "correct": 2, "fbOk": "Exacto. Cuando los picos estacionales crecen proporcionalmente con la tendencia, el componente es multiplicativo, no aditivo.", "fbErr": "Incorrecto. La clave esta en la frase 'cada vez mas pronunciados'. Si la amplitud estacional es constante en unidades absolutas (siempre +500 pasajeros en verano), usas aditivo. Si crece proporcionalmente con el nivel (siempre +30% en verano, y el nivel sube de 10k a 15k, entonces el pico pasa de +3k a +4.5k), usas multiplicativo. Aqui la amplitud crece con la tendencia, asi que Holt-Winters multiplicativo es el adecuado."}, {"type": "mc", "q": "Tras ajustar Holt-Winters a ventas mensuales, el test de diagnostico de residuos da p=0.02 y la ACF muestra un pico en lag 3. ¿Que hace?", "opts": ["Ignorar; p=0.02 es suficientemente alto y RMSE en muestra es bueno.", "Probar ARIMA con componente AR(3) porque hay autocorrelacion residual que ETS no captura.", "Cambiar a aditivo/multiplicativo; el pico en lag 3 es estacional.", "Duplicar el periodo estacional m."], "correct": 1, "fbOk": "Correcto. p<0.05 en el test de residuos indica que queda estructura sin modelar. El pico en lag 3 sugiere autocorrelacion de corto plazo que ETS no maneja. ARIMA(3,d,q) es la via.", "fbErr": "Incorrecto. Un test de diagnostico de residuos con p=0.02 rechaza la hipotesis de que los residuos sean ruido blanco. Eso significa que el modelo dejo informacion predictiva en los errores. ETS maneja tendencia y estacionalidad pero no autocorrelacion residual de corto plazo. El pico en lag 3 (no en 12 o 24) descarta un problema estacional y apunta a dependencia AR. La solucion es explorar ARIMA o un modelo hibrido."}, {"type": "mc", "q": "¿Que modelo usar si una serie mensual oscila alrededor de un nivel constante sin crecimiento y tiene picos estacionales de amplitud similar cada año?", "opts": ["SES.", "Holt.", "Holt-Winters aditivo.", "Holt-Winters multiplicativo."], "correct": 2, "fbOk": "Bien. Nivel constante + estacionalidad de amplitud constante = Holt-Winters aditivo. No hay tendencia, pero la estacionalidad esta presente.", "fbErr": "Incorrecto. SES fallaria porque no modela la estacionalidad: cada mes el pronostico estaria desfasado por el componente estacional. Holt tampoco sirve porque no tiene componente estacional. Holt-Winters aditivo es la eleccion porque el nivel es constante (sin tendencia) y los picos tienen amplitud constante en unidades absolutas. La version multiplicativa se reserva para cuando la amplitud crece con el nivel."}, {"type": "mc", "q": "¿Es cierto que ARIMA requiere estacionariedad pero ETS no?", "opts": ["Verdadero.", "Falso; ambos requieren estacionariedad.", "Falso; ninguno requiere estacionariedad.", "Verdadero solo para series trimestrales."], "correct": 0, "fbOk": "Verdadero. ARIMA modela autocorrelacion bajo el supuesto de media y varianza constantes. ETS maneja tendencia y estacionalidad directamente sin exigir estacionariedad previa.", "fbErr": "Incorrecto. ARIMA requiere que la serie sea estacionaria (o estacionaria tras diferenciar). Si la media cambia con el tiempo, los coeficientes AR carecen de interpretacion estable. ETS, en cambio, actualiza el nivel, la tendencia y la estacionalidad de forma explicita, por lo que no requiere que la serie sea estacionaria. Esa es una de sus grandes ventajas practicas frente a ARIMA."}, {"type": "mc", "q": "Una serie original tiene ACF que decae muy lentamente sin corte. Tras diferenciar una vez, la ACF decae rapidamente. ¿Que indica esto?", "opts": ["Que la serie original tenia un componente AR(1) fuerte.", "Que la serie original no era estacionaria y una diferencia (d=1) fue suficiente.", "Que se necesita un modelo MA(1).", "Que hay un outlier en el rezago 1."], "correct": 1, "fbOk": "Correcto. ACF lenta indica tendencia / no estacionariedad. Tras diferenciar, la ACF rapida confirma que d=1 logro estacionariedad. Es la senal clasica para ARIMA con d≥1.", "fbErr": "Incorrecto. La ACF de una serie no estacionaria con tendencia decae lentamente y linealmente porque los valores estan correlacionados consigo mismos a traves del tiempo. Al diferenciar (Y(t)-Y(t-1)), eliminas la tendencia y la ACF debe decaer rapidamente si la serie diferenciada es estacionaria. Eso define el parametro d en ARIMA. Una ACF lenta no indica AR(1); de hecho, un AR(1) estacionario tiene ACF que decae exponencialmente rapido."}, {"type": "mc", "q": "Ajusta ARIMA(1,1,1) a una serie mensual. RMSE en muestra es muy bajo, ajuste visual excelente, pero test de diagnostico de residuos p=0.03 y ACF de residuos tiene pico en lag 12. ¿Que concluye?", "opts": ["El modelo es valido; el RMSE bajo es lo que importa.", "El modelo esta mal especificado; falta estacionalidad anual. Probar SARIMA.", "p=0.03 es suficientemente alto; no hay que preocuparse.", "El pico en lag 12 es ruido; agregar mas parametros causaria sobreajuste."], "correct": 1, "fbOk": "Correcto. p=0.03 < 0.05 indica estructura residual. El pico en lag 12 es estacionalidad anual no capturada. La solucion es SARIMA con componente estacional.", "fbErr": "Incorrecto. El RMSE en muestra puede ser enganoso: un modelo puede memorizar el pasado sin capturar la estructura real. Un test de diagnostico con p<0.05 es evidencia tecnica concreta de que los residuos no son ruido blanco. El pico en lag 12 en una serie mensual es practicamente un diagnostico definitivo de estacionalidad anual omitida. El siguiente paso es probar SARIMA, por ejemplo SARIMA(1,1,1)(0,1,1)12."}, {"type": "mc", "q": "Ajustas Holt-Winters y SARIMA a 5 años de datos mensuales. Ambos pasan diagnostico de residuos. SARIMA tiene RMSE en muestra 15% menor. El directorio pide pronostico para decidir una inversion de $50M. ¿Que presentas?", "opts": ["Solo SARIMA porque tiene menor RMSE.", "Solo Holt-Winters porque es mas facil de explicar.", "Ambos modelos, con RMSE fuera de muestra, intervalos de confianza y escenarios alternativos.", "El modelo mas parsimonioso, sin importar el RMSE."], "correct": 2, "fbOk": "Excelente. Con $50M en juego, no basta un pronostico puntual. Se requieren escenarios, intervalos de confianza y validacion fuera de muestra. Ambos modelos pasan diagnostico, asi que ninguno es descartable tecnica mente.", "fbErr": "Incorrecto. Con una decision de alto impacto ($50M), la honestidad analitica exige: (1) validacion fuera de muestra, porque el RMSE en muestra favorece modelos complejos que pueden estar sobreajustados; (2) intervalos de confianza del pronostico, porque la incertidumbre crece con el horizonte; (3) escenarios alternativos (optimista/base/pesimista), porque el supuesto de que el futuro se parecera al pasado puede fallar. Descartar un modelo que pasa todos los diagnosticos solo porque otro tiene mejor RMSE en muestra es tecnicamente debil."}, {"type": "dev", "q": "Caso de serie de tiempo. Una empresa de retail tiene ventas mensuales de 2018 a 2023. En 2020 hubo una caida del 40% por la pandemia; ya se recupero. Ajusta Holt-Winters y obtiene buen ajuste visual, pero los residuos de 2020 son enormes y el test de diagnostico da p=0.04. a) ¿Por que falla el modelo en 2020 y que tipo de problema representa? b) ¿Que haria para proyectar 2024: reentrenar con solo 2021-2023, usar el modelo completo, o construir escenarios? Justifique.", "keywords": ["quiebre estructural", "pandemia", "2020", "evento externo", "supuesto", "estructura estable", "escenarios", "reentrenar", "pocos datos", "incertidumbre", "supuesto de estabilidad", " Holt-Winters", "no captura", "futuro"], "minMatches": 6, "fbOk": "Muy bien. 2020 es un quiebre estructural: el supuesto de estructura estable fallo. No es culpa del modelo, sino del mundo. Reentrenar con 2021-2023 da pocos datos. La solucion honesta es presentar escenarios alternativos, no un unico pronostico puntual.", "fbErr": "Tu respuesta debe contener: (1) Diagnostico: 2020 es un quiebre estructural causado por un evento externo no modelable. El supuesto de ETS de estructura estable se violo. No es un error del analista ni del software. (2) Dilema del reentrenamiento: usar solo 2021-2023 reduce la muestra a ~24-36 meses, lo que puede producir estimaciones inestables de los parametros y amplios intervalos de confianza. (3) Solucion recomendada: construir escenarios (recuperacion rapida / lenta / estancamiento) y comunicar incertidumbre. Un pronostico puntual unico para una decision estrategica seria profesionalmente irresponsable tras un quiebre de esa magnitud."}, {"type": "dev", "q": "Caso de seleccion de modelo. Una cadena de farmacia tiene 36 meses de ventas. Observa tendencia creciente lineal y estacionalidad anual de amplitud constante (siempre +200 unidades en diciembre). Los residuos de Holt-Winters tienen test p=0.18 y ACF sin picos significativos. SARIMA(1,1,1)(0,1,1)12 tiene test p=0.31 y AIC ligeramente menor. a) ¿Que modelo recomienda y por que? b) Si el horizonte de pronostico es 12 meses para presupuesto, ¿que metrica de error deberia mostrar al directorio y por que el RMSE en muestra no basta?", "keywords": ["holt-winters", "parsimonia", "simpler", "explicar", "aic", "rmse", "fuera de muestra", "test", "diagnostico", "pasa", "estructura", "incertidumbre", "pronostico", "presupuesto", "horizonte"], "minMatches": 6, "fbOk": "Excelente. Recomendaria Holt-Winters por parsimonia: ambos pasan diagnostico, pero ETS es mas facil de comunicar a gerencia. Para el presupuesto, deberia mostrar RMSE fuera de muestra (validacion temporal) e intervalos de confianza, no solo RMSE en muestra.", "fbErr": "Tu respuesta requiere: (1) Recomendacion de modelo: ambos pasan el diagnostico tecnico (p>0.05), por lo que no hay razon para descartar ninguno por mala especificacion. Entre un modelo simple que pasa y uno complejo que tambien pasa, la parsimonia favorece el simple. Holt-Winters es mas facil de explicar al directorio que SARIMA(1,1,1)(0,1,1)12. (2) Metrica: el RMSE en muestra favorece modelos que se ajustan al ruido historico. La prueba real es el RMSE fuera de muestra (rolling forecast o train/test temporal). (3) Comunicacion: para un horizonte de 12 meses, los intervalos de confianza del pronostico son tan importantes como el punto central, porque la varianza del error crece con el horizonte."}]};
+
+function renderQuiz(mod, containerId){
+  const container = document.getElementById(containerId);
+  if(!container) return;
+  const data = QUIZ_DATA[mod] || [];
+  container.innerHTML = data.map((q,i)=>{
+    const saved = state.quizzes[mod+'_'+i] || {};
+    let html = '<div class="q-card">';
+    html += '<div class="q-title">'+ (i+1) + '. ' + escapeHtml(q.q) + '</div>';
+    if(q.type==='mc'){
+      html += '<div class="options">';
+      q.opts.forEach((opt,ci)=>{
+        let cls = 'opt';
+        if(saved.answered){
+          if(ci===q.correct) cls += ' correct';
+          else if(ci===saved.choice) cls += ' wrong';
+        } else if(saved.choice===ci) cls += ' selected';
+        const onclick = saved.answered ? '' : ' onclick="window._selectMC(&quot;'+mod+'&quot;,'+i+','+ci+')"';
+        html += '<div class="'+cls+'" id="opt-'+mod+'-'+i+'-'+ci+'"'+onclick+'><div class="marker">'+(saved.answered?(ci===q.correct?'✓':(ci===saved.choice?'✕':'')):'')+'</div><span>'+escapeHtml(opt)+'</span></div>';
+      });
+      html += '</div>';
+      if(!saved.answered){
+        html += '<button class="btn-primary" onclick="window._submitMC(&quot;'+mod+'&quot;,'+i+')">Verificar Respuesta</button>';
+      } else {
+        html += '<div class="feedback '+(saved.correct?'ok':'err')+'"><div class="fb-title">'+(saved.correct?'✓ Correcto':'✕ Incorrecto')+'</div>'+escapeHtml(saved.correct?q.fbOk:q.fbErr)+'</div>';
+      }
+    } else {
+      html += '<textarea class="dev-area" id="dev-'+mod+'-'+i+'" placeholder="Escriba su respuesta desarrollada aqui...">'+escapeHtml(saved.text||'')+'</textarea>';
+      if(!saved.answered){
+        html += '<button class="btn-primary" onclick="window._submitDev(&quot;'+mod+'&quot;,'+i+')">Enviar Respuesta</button>';
+      } else {
+        html += '<div class="feedback '+(saved.correct?'ok':'err')+'"><div class="fb-title">'+(saved.correct?'✓ Respuesta Aceptada':'✕ Necesita Revision')+'</div>'+escapeHtml(saved.correct?q.fbOk:q.fbErr)+'</div>';
+        if(!saved.correct) html += '<div style="margin-top:8px;font-size:13px;color:var(--text2)"><strong>Respuesta modelo:</strong> '+escapeHtml(q.fbOk)+'</div>';
+      }
+    }
+    html += '</div>';
+    return html;
+  }).join('');
+}
+function escapeHtml(t){ return (t||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+window._selectMC = function(mod,i,ci){
+  const q = QUIZ_DATA[mod][i];
+  q.opts.forEach((_,ci2)=>{
+    const el = document.getElementById('opt-'+mod+'-'+i+'-'+ci2);
+    if(el) el.classList.toggle('selected', ci2===ci);
+  });
+  if(!state.quizzes[mod+'_'+i]) state.quizzes[mod+'_'+i] = {};
+  state.quizzes[mod+'_'+i].choice = ci;
+  persist();
+}
+window._submitMC = function(mod,i){
+  const q = QUIZ_DATA[mod][i];
+  const saved = state.quizzes[mod+'_'+i] || {};
+  if(saved.choice==null){ alert('Selecciona una opcion primero.'); return; }
+  const correct = saved.choice === q.correct;
+  state.quizzes[mod+'_'+i] = {answered:true, choice:saved.choice, correct:correct};
+  persist();
+  renderQuiz(mod, 'q-'+mod);
+  saveToCloud({event:'quiz',mod:mod,q:i,correct:correct,type:'mc',ip:ipInfo.ip});
+  // global progress update
+  const prog = computeProgress();
+  const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+}
+window._submitDev = function(mod,i){
+  const q = QUIZ_DATA[mod][i];
+  const text = document.getElementById('dev-'+mod+'-'+i).value;
+  if(!text.trim()){ alert('Escribe una respuesta antes de enviar.'); return; }
+  const matches = countKeywords(text, q.keywords);
+  const correct = matches >= q.minMatches;
+  state.quizzes[mod+'_'+i] = {answered:true, text:text, correct:correct, matches:matches};
+  persist();
+  renderQuiz(mod, 'q-'+mod);
+  saveToCloud({event:'quiz',mod:mod,q:i,correct:correct,type:'dev',matches:matches,ip:ipInfo.ip});
+  const prog = computeProgress();
+  const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
+}
+
+// ===== CANVAS VISUALIZATIONS =====
+function initRegressionLab(){
+  const wrap = document.createElement('div'); wrap.className='canvas-wrap'; wrap.innerHTML='<h3 style="margin:0 0 10px">Laboratorio: Regresion Lineal Simple (Interactivo)</h3><div class="slider-row"><label>Pendiente β1</label><input type="range" id="reg-b1" min="-2" max="4" step="0.1" value="1.5"><span id="val-b1">1.5</span></div><div class="slider-row"><label>Ruido σ</label><input type="range" id="reg-noise" min="2" max="30" step="1" value="12"><span id="val-noise">12</span></div><div style="font-family:var(--font-mono);font-size:12px;color:var(--text2);margin-bottom:6px">R² calculado: <span id="reg-r2" style="color:var(--m2);font-weight:700">--</span> | RMSE: <span id="reg-rmse" style="color:var(--m2);font-weight:700">--</span></div><canvas id="c-reg" width="600" height="240" style="max-width:100%;height:auto"></canvas>';
+  const mod2 = document.getElementById('mod2');
+  const quiz2 = document.getElementById('q-mod2');
+  if(mod2 && quiz2) mod2.insertBefore(wrap, quiz2);
+  const canvas = document.getElementById('c-reg');
+  const ctx = canvas.getContext('2d');
+  let b1=1.5, noise=12, b0=30, n=40;
+  function drawReg(){
+    const w=canvas.width, h=canvas.height, pad=30;
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#333'; ctx.lineWidth=1;
+    for(let i=0;i<=4;i++){ const y=pad+(h-2*pad)*(i/4); ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke(); }
+    // data
+    let sx=0,sy=0,sxy=0,sx2=0,ssy=0,ymean=0;
+    const pts=[];
+    for(let i=0;i<n;i++){ const x=i*(100/(n-1)); const e=(Math.random()-0.5)*2*noise; const y=b0+b1*x+e; pts.push({x,y}); sx+=x; sy+=y; sxy+=x*y; sx2+=x*x; }
+    ymean=sy/n; for(let i=0;i<n;i++) ssy+=Math.pow(pts[i].y-ymean,2);
+    const bx=(n*sxy-sx*sy)/(n*sx2-sx*sx); const by=(sy-bx*sx)/n;
+    let ssres=0;
+    pts.forEach(p=>{ const yhat=by+bx*p.x; ssres+=Math.pow(p.y-yhat,2); const px=pad+(p.x/100)*(w-2*pad); const py=h-pad-(p.y/500)*(h-2*pad); ctx.fillStyle='var(--m2)'; ctx.beginPath(); ctx.arc(px,py,3,0,Math.PI*2); ctx.fill(); });
+    const r2 = (ssy>0)? 1-ssres/ssy : 0;
+    const rmse = Math.sqrt(ssres/n);
+    document.getElementById('reg-r2').textContent = r2.toFixed(3);
+    document.getElementById('reg-rmse').textContent = rmse.toFixed(1);
+    // line
+    ctx.strokeStyle='var(--m1)'; ctx.lineWidth=2;
+    ctx.beginPath();
+    ctx.moveTo(pad, h-pad-(by/500)*(h-2*pad));
+    ctx.lineTo(w-pad, h-pad-((by+bx*100)/500)*(h-2*pad));
+    ctx.stroke();
+  }
+  function update(){ b1=parseFloat(document.getElementById('reg-b1').value); noise=parseFloat(document.getElementById('reg-noise').value); document.getElementById('val-b1').textContent=b1; document.getElementById('val-noise').textContent=noise; drawReg(); }
+  document.getElementById('reg-b1').addEventListener('input',update);
+  document.getElementById('reg-noise').addEventListener('input',update);
+  update();
+}
+
+function initSeriesLab(){
+  const wrap = document.createElement('div'); wrap.className='canvas-wrap'; wrap.innerHTML='<h3 style="margin:0 0 10px">Laboratorio: Suavizamiento Exponencial Simple (Interactivo)</h3><div class="slider-row"><label>α (memoria)</label><input type="range" id="ses-a" min="0.05" max="0.95" step="0.05" value="0.3"><span id="val-ses">0.30</span></div><div style="font-size:12px;color:var(--text2);margin-bottom:6px">Serie con tendencia + estacionalidad mensual. SES sin tendencia subestima sistematicamente.</div><canvas id="c-ses" width="600" height="220" style="max-width:100%;height:auto"></canvas>';
+  const mod4 = document.getElementById('mod4');
+  const quiz4 = document.getElementById('q-mod4');
+  if(mod4 && quiz4) mod4.insertBefore(wrap, quiz4);
+  const canvas = document.getElementById('c-ses');
+  const ctx = canvas.getContext('2d');
+  const N=48;
+  const Y=[];
+  for(let t=0;t<N;t++){ Y.push(40 + 0.6*t + 12*Math.sin(2*Math.PI*t/12) + (Math.random()-0.5)*8); }
+  function drawSes(){
+    const a=parseFloat(document.getElementById('ses-a').value);
+    document.getElementById('val-ses').textContent=a.toFixed(2);
+    const w=canvas.width, h=canvas.height, pad=28;
+    ctx.fillStyle='#111'; ctx.fillRect(0,0,w,h);
+    ctx.strokeStyle='#333'; ctx.beginPath();
+    for(let i=0;i<=N;i+=12){ const x=pad+(i/(N-1))*(w-2*pad); ctx.moveTo(x,pad); ctx.lineTo(x,h-pad); }
+    ctx.stroke();
+    // SES
+    let S=Y[0]; const smooth=[S];
+    for(let t=1;t<N;t++){ S = a*Y[t] + (1-a)*S; smooth.push(S); }
+    // draw original
+    ctx.strokeStyle='var(--m4)'; ctx.lineWidth=1.5; ctx.beginPath();
+    for(let t=0;t<N;t++){ const x=pad+(t/(N-1))*(w-2*pad); const y=h-pad-(Y[t]/100)*(h-2*pad); if(t===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    // draw smooth
+    ctx.strokeStyle='var(--m1)'; ctx.lineWidth=2.5; ctx.beginPath();
+    for(let t=0;t<N;t++){ const x=pad+(t/(N-1))*(w-2*pad); const y=h-pad-(smooth[t]/100)*(h-2*pad); if(t===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    // legend
+    ctx.fillStyle='var(--m4)'; ctx.fillRect(pad,10,12,3); ctx.fillStyle='var(--text2)'; ctx.fillText('Original', pad+18, 14);
+    ctx.fillStyle='var(--m1)'; ctx.fillRect(pad+80,10,12,3); ctx.fillStyle='var(--text2)'; ctx.fillText('SES', pad+98, 14);
+  }
+  document.getElementById('ses-a').addEventListener('input',drawSes);
+  drawSes();
+}
+
+// ===== INIT =====
+document.addEventListener('DOMContentLoaded', function(){
+  renderQuiz('mod1','q-mod1');
+  renderQuiz('mod2','q-mod2');
+  renderQuiz('mod3','q-mod3');
+  renderQuiz('mod4','q-mod4');
+  initRegressionLab();
+  initSeriesLab();
+  navigate('home');
+  renderDashboard();
+});
+})();
+</script>
+</div>
+</body>
+</html>
