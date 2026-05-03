@@ -833,33 +833,49 @@ function renderGlobalMetrics(data, modNames){
 }
 
 function useLocalFallback(modNames, elStatus){
-  // Calculate user's own module stats from selected questions
-  var stats = {};
-  ['mod1','mod2','mod3','mod4'].forEach(m=>{
-    var selected = getQuizSet(m);
-    var total=0, correct=0;
-    selected.forEach(realIdx=>{
-      var s = state.quizzes[m+'_'+realIdx];
-      if(s && s.answered){ total++; if(s.correct) correct++; }
+  // Use cached global stats if available (preserved across resets)
+  var data = state.globalStats || null;
+  if(!data || !data.bestModule){
+    // Fallback: calculate from current quizzes if no cache exists yet
+    var stats = {};
+    ['mod1','mod2','mod3','mod4'].forEach(m=>{
+      var selected = getQuizSet(m);
+      var total=0, correct=0;
+      selected.forEach(realIdx=>{
+        var s = state.quizzes[m+'_'+realIdx];
+        if(s && s.answered){ total++; if(s.correct) correct++; }
+      });
+      stats[m] = total ? correct/total : 0;
     });
-    stats[m] = total ? correct/total : 0;
-  });
-
-  var best='', worst='', bestRate=0, worstRate=1;
-  Object.keys(stats).forEach(m=>{
-    if(stats[m] > bestRate){ bestRate=stats[m]; best=m; }
-    if(stats[m] < worstRate && stats[m] > 0){ worstRate=stats[m]; worst=m; }
-  });
-
-  var data = {
-    avgScore: bestRate ? Math.round(bestRate*10*10)/10 : null,
-    uniqueUsers: 1,
-    bestModule: best ? {name:best, rate:bestRate} : null,
-    worstModule: worst ? {name:worst, rate:worstRate} : null
-  };
-
+    var best='', worst='', bestRate=0, worstRate=1;
+    Object.keys(stats).forEach(m=>{
+      if(stats[m] > bestRate){ bestRate=stats[m]; best=m; }
+      if(stats[m] < worstRate && stats[m] > 0){ worstRate=stats[m]; worst=m; }
+    });
+    var totalMC=0, correctMC=0, totalDev=0, correctDev=0;
+    Object.keys(QUIZ_DATA).forEach(k=>{
+      var selected = getQuizSet(k);
+      selected.forEach(realIdx=>{
+        var q = QUIZ_DATA[k][realIdx];
+        if(!q) return;
+        var s = state.quizzes[k+'_'+realIdx];
+        if(s && s.answered){
+          if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
+          else { totalDev++; if(s.correct) correctDev++; }
+        }
+      });
+    });
+    var totalAnswered = totalMC + totalDev;
+    var avgScore = totalAnswered ? Math.round((correctMC+correctDev)/totalAnswered*10*10)/10 : null;
+    data = {
+      avgScore: avgScore,
+      uniqueUsers: 1,
+      bestModule: best ? {name:best, rate:bestRate} : null,
+      worstModule: worst ? {name:worst, rate:worstRate} : null
+    };
+  }
   renderGlobalMetrics(data, modNames);
-  if(elStatus) elStatus.innerHTML = '<span style="color:var(--warn)">Modo local:</span> datos globales requieren que el endpoint GAS devuelva JSON via GET. Mostrando tu desempeno por modulo como referencia.';
+  if(elStatus) elStatus.innerHTML = '<span style="color:var(--warn)">Modo local:</span> datos globales requieren que el endpoint GAS devuelva JSON via GET. Mostrando tu desempeno acumulado como referencia.';
 }
 function computeProgress(){
   let total=0, done=0;
@@ -958,6 +974,7 @@ window._submitMC = function(mod,i){
   const correct = saved.choice === q.correct;
   state.quizzes[mod+'_'+i] = {answered:true, choice:saved.choice, correct:correct};
   persist();
+  calculateAndCacheStats();
   renderQuiz(mod, 'q-'+mod);
   saveToCloud({event:'quiz',mod:mod,q:i,correct:correct,type:'mc',ip:ipInfo.ip});
   // global progress update
@@ -975,6 +992,7 @@ window._submitDev = function(mod,i){
   const correct = matches >= q.minMatches;
   state.quizzes[mod+'_'+i] = {answered:true, text:text, correct:correct, matches:matches};
   persist();
+  calculateAndCacheStats();
   renderQuiz(mod, 'q-'+mod);
   saveToCloud({event:'quiz',mod:mod,q:i,correct:correct,type:'dev',matches:matches,ip:ipInfo.ip});
   const prog = computeProgress();
@@ -1068,16 +1086,19 @@ function executeReset(){
   const okDiv = document.getElementById('reset-ok');
   const errDiv = document.getElementById('reset-err');
   if(input === RESET_PASS){
-    // Reset ONLY quiz progress and quiz sets; preserve time, visits, country
+    // 1. Cache current stats BEFORE wiping progress
+    calculateAndCacheStats();
+    // 2. Reset ONLY quiz progress and quiz sets; preserve time, visits, country, globalStats
     state.quizzes = {};
     state.quizSets = {};
     persist();
-    // Refresh any visible module quiz
-    ['mod1','mod2','mod3','mod4'].forEach(m=>{
-      const quizDiv = document.getElementById('q-'+m);
-      if(quizDiv) renderQuiz(m, 'q-'+m);
-    });
-    if(okDiv) okDiv.style.display = 'block';
+    // 3. Clear password field
+    const passInput = document.getElementById('reset-pass');
+    if(passInput) passInput.value = '';
+    // 4. Navigate to home
+    navigate('home');
+    // 5. Hide feedback after navigation
+    if(okDiv) okDiv.style.display = 'none';
     if(errDiv) errDiv.style.display = 'none';
   } else {
     if(errDiv) errDiv.style.display = 'block';
@@ -1085,6 +1106,47 @@ function executeReset(){
   }
 }
 window.executeReset = executeReset;
+
+function calculateAndCacheStats(){
+  var stats = {};
+  ['mod1','mod2','mod3','mod4'].forEach(m=>{
+    var selected = getQuizSet(m);
+    var total=0, correct=0;
+    selected.forEach(realIdx=>{
+      var s = state.quizzes[m+'_'+realIdx];
+      if(s && s.answered){ total++; if(s.correct) correct++; }
+    });
+    stats[m] = total ? correct/total : 0;
+  });
+  var best='', worst='', bestRate=0, worstRate=1;
+  Object.keys(stats).forEach(m=>{
+    if(stats[m] > bestRate){ bestRate=stats[m]; best=m; }
+    if(stats[m] < worstRate && stats[m] > 0){ worstRate=stats[m]; worst=m; }
+  });
+  var totalMC=0, correctMC=0, totalDev=0, correctDev=0;
+  Object.keys(QUIZ_DATA).forEach(k=>{
+    var selected = getQuizSet(k);
+    selected.forEach(realIdx=>{
+      var q = QUIZ_DATA[k][realIdx];
+      if(!q) return;
+      var s = state.quizzes[k+'_'+realIdx];
+      if(s && s.answered){
+        if(q.type==='mc'){ totalMC++; if(s.correct) correctMC++; }
+        else { totalDev++; if(s.correct) correctDev++; }
+      }
+    });
+  });
+  var totalAnswered = totalMC + totalDev;
+  var avgScore = totalAnswered ? Math.round((correctMC+correctDev)/totalAnswered*10*10)/10 : null;
+  state.globalStats = {
+    avgScore: avgScore,
+    uniqueUsers: 1,
+    bestModule: best ? {name:best, rate:bestRate} : null,
+    worstModule: worst ? {name:worst, rate:worstRate} : null,
+    totals: {mc: totalMC, correctMC: correctMC, dev: totalDev, correctDev: correctDev, totalAnswered: totalAnswered}
+  };
+  persist();
+}
 
 // ===== INIT =====
 document.addEventListener('DOMContentLoaded', function(){
