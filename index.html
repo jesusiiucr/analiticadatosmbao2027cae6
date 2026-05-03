@@ -661,19 +661,19 @@ function renderQuiz(mod, containerId){
           if(ci===q.correct) cls += ' correct';
           else if(ci===saved.choice) cls += ' wrong';
         } else if(saved.choice===ci) cls += ' selected';
-        const onclick = saved.answered ? '' : ' onclick="selectMC(''+mod+'','+i+','+ci+')"';
+        const onclick = saved.answered ? '' : ' onclick="window._selectMC(&quot;'+mod+'&quot;,'+i+','+ci+')"';
         html += '<div class="'+cls+'" id="opt-'+mod+'-'+i+'-'+ci+'"'+onclick+'><div class="marker">'+(saved.answered?(ci===q.correct?'✓':(ci===saved.choice?'✕':'')):'')+'</div><span>'+escapeHtml(opt)+'</span></div>';
       });
       html += '</div>';
       if(!saved.answered){
-        html += '<button class="btn-primary" onclick="submitMC(''+mod+'','+i+')">Verificar Respuesta</button>';
+        html += '<button class="btn-primary" onclick="window._submitMC(&quot;'+mod+'&quot;,'+i+')">Verificar Respuesta</button>';
       } else {
         html += '<div class="feedback '+(saved.correct?'ok':'err')+'"><div class="fb-title">'+(saved.correct?'✓ Correcto':'✕ Incorrecto')+'</div>'+escapeHtml(saved.correct?q.fbOk:q.fbErr)+'</div>';
       }
     } else {
       html += '<textarea class="dev-area" id="dev-'+mod+'-'+i+'" placeholder="Escriba su respuesta desarrollada aqui...">'+escapeHtml(saved.text||'')+'</textarea>';
       if(!saved.answered){
-        html += '<button class="btn-primary" onclick="submitDev(''+mod+'','+i+')">Enviar Respuesta</button>';
+        html += '<button class="btn-primary" onclick="window._submitDev(&quot;'+mod+'&quot;,'+i+')">Enviar Respuesta</button>';
       } else {
         html += '<div class="feedback '+(saved.correct?'ok':'err')+'"><div class="fb-title">'+(saved.correct?'✓ Respuesta Aceptada':'✕ Necesita Revision')+'</div>'+escapeHtml(saved.correct?q.fbOk:q.fbErr)+'</div>';
         if(!saved.correct) html += '<div style="margin-top:8px;font-size:13px;color:var(--text2)"><strong>Respuesta modelo:</strong> '+escapeHtml(q.fbOk)+'</div>';
@@ -684,7 +684,7 @@ function renderQuiz(mod, containerId){
   }).join('');
 }
 function escapeHtml(t){ return (t||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
-function selectMC(mod,i,ci){
+window._selectMC = function(mod,i,ci){
   const q = QUIZ_DATA[mod][i];
   q.opts.forEach((_,ci2)=>{
     const el = document.getElementById('opt-'+mod+'-'+i+'-'+ci2);
@@ -694,7 +694,7 @@ function selectMC(mod,i,ci){
   state.quizzes[mod+'_'+i].choice = ci;
   persist();
 }
-function submitMC(mod,i){
+window._submitMC = function(mod,i){
   const q = QUIZ_DATA[mod][i];
   const saved = state.quizzes[mod+'_'+i] || {};
   if(saved.choice==null){ alert('Selecciona una opcion primero.'); return; }
@@ -707,7 +707,7 @@ function submitMC(mod,i){
   const prog = computeProgress();
   const elp = document.getElementById('d-progress'); if(elp) elp.textContent = prog+'%';
 }
-function submitDev(mod,i){
+window._submitDev = function(mod,i){
   const q = QUIZ_DATA[mod][i];
   const text = document.getElementById('dev-'+mod+'-'+i).value;
   if(!text.trim()){ alert('Escribe una respuesta antes de enviar.'); return; }
