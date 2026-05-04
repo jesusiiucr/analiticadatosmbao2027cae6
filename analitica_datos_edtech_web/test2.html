@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head><title>Direct v2 State Test</title></head>
+<body>
+<h1>Setting dl_state_v2 directly...</h1>
+<script>
+const v2State = {
+  version: 2,
+  quizzes: {
+    'mod1_0': {answered: true, choice: 2, correct: true, timeSpent: 15},
+    'mod1_1': {answered: true, choice: 1, correct: false, timeSpent: 22},
+    'mod1_2': {answered: true, choice: 0, correct: true, timeSpent: 8},
+    'mod1_3': {answered: true, choice: 3, correct: true, timeSpent: 12},
+    'mod1_4': {answered: true, choice: 0, correct: false, timeSpent: 30},
+  },
+  quizSets: { mod1: [0,1,2,3,4,5,6,7,8,9], mod2: [0,1,2,3,4,5,6,7,8,9], mod3: [0,1,2,3,4,5,6,7,8,9], mod4: [0,1,2,3,4,5,6,7,8,9] },
+  levels: { mod1:1, mod2:1, mod3:1, mod4:1 },
+  xp: 50,
+  streak: 0,
+  bestStreak: 3,
+  totalAnswered: 5,
+  totalCorrect: 3,
+  time: 3600,
+  visits: 6,
+  sessions: [],
+  detectedCountries: ['Costa Rica', 'Panama'],
+  lastModule: null,
+  badgesUnlocked: [],
+  analytics: { timePerQuestion: {}, attemptsPerQuestion: {}, history: [] },
+  adaptive: { weakTopics: {}, recommended: {} },
+  globalStats: {avgScore: 7.5, uniqueUsers: 3},
+  ipInfo: {ip: '1.2.3.4', country: 'Costa Rica'},
+  countryStats: null,
+  activeUserStats: null
+};
+localStorage.setItem('dl_state_v2', JSON.stringify(v2State));
+localStorage.removeItem('ad_state');
+document.body.innerHTML += '<p>dl_state_v2 set with 5 answered mod1 questions. Redirecting...</p>';
+setTimeout(() => { window.location.href = 'index.html'; }, 500);
+</script>
+</body>
+</html>

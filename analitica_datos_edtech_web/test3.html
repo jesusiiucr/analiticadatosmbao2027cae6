@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head><title>Debug State</title></head>
+<body>
+<h1>Debug: Inspecting dl_state_v2</h1>
+<pre id="out"></pre>
+<script>
+const raw = localStorage.getItem('dl_state_v2');
+const state = raw ? JSON.parse(raw) : {};
+const out = document.getElementById('out');
+out.textContent = JSON.stringify({
+  hasQuizzes: !!state.quizzes,
+  quizKeys: Object.keys(state.quizzes || {}),
+  hasQuizSets: !!state.quizSets,
+  quizSetMod1: state.quizSets?.mod1,
+  totalAnswered: state.totalAnswered,
+  totalCorrect: state.totalCorrect,
+}, null, 2);
+</script>
+<br><a href="index.html">Go to App</a>
+</body>
+</html>

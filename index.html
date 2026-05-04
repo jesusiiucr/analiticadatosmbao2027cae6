@@ -1362,10 +1362,42 @@ const CONFIG = {
 // ==============================================
 const StateManager = {
   key: 'dl_state_v2',
+  legacyKey: 'ad_state',
   load() {
     try {
+      // 1. Try native v2 key first
       const raw = localStorage.getItem(this.key);
-      return raw ? JSON.parse(raw) : this.defaultState();
+      if(raw) return JSON.parse(raw);
+      // 2. Fallback: migrate from original project (ad_state)
+      const legacy = localStorage.getItem(this.legacyKey);
+      if(legacy) {
+        const old = JSON.parse(legacy);
+        const fresh = this.defaultState();
+        // Migrate core fields
+        if(old.quizzes) fresh.quizzes = old.quizzes;
+        if(old.quizSets) fresh.quizSets = old.quizSets;
+        if(old.time) fresh.time = old.time;
+        if(old.visits) fresh.visits = old.visits;
+        if(old.detectedCountries) fresh.detectedCountries = old.detectedCountries;
+        if(old.globalStats) fresh.globalStats = old.globalStats;
+        if(old.ipInfo) fresh.ipInfo = old.ipInfo;
+        // Recalculate derived metrics from migrated quizzes
+        if(old.quizzes) {
+          let answered = 0, correct = 0;
+          Object.values(old.quizzes).forEach(q => {
+            if(q.answered) {
+              answered++;
+              if(q.correct) correct++;
+            }
+          });
+          fresh.totalAnswered = answered;
+          fresh.totalCorrect = correct;
+        }
+        // Save as v2 so future loads skip migration
+        this.save(fresh);
+        return fresh;
+      }
+      return this.defaultState();
     } catch(e) { return this.defaultState(); }
   },
   defaultState() {
@@ -2100,6 +2132,7 @@ const App = {
       this.state.lastModule = id;
       this.save();
     }
+    if(id.startsWith('mod')) this.updateModuleHeader(id);
     if(id === 'analytics') this.renderAnalytics();
     if(id === 'home') this.updateHome();
     if(id === 'profile') this.updateProfile();
@@ -2108,7 +2141,10 @@ const App = {
     }
   },
   renderAllModules() {
-    ['mod1','mod2','mod3','mod4'].forEach(m => QuizEngine.render(m, 'q-'+m, this.state));
+    ['mod1','mod2','mod3','mod4'].forEach(m => {
+      QuizEngine.render(m, 'q-'+m, this.state);
+      this.updateModuleHeader(m);
+    });
   },
   renderModule(mod) {
     QuizEngine.render(mod, 'q-'+mod, this.state);
@@ -2152,24 +2188,37 @@ const App = {
     }
   },
   updateModuleHeader(mod) {
-    const stats = Analytics.getModuleStats(this.state, mod);
+    // Direct count from state.quizzes (no dependency on Analytics/getQuizSet)
+    const state = JSON.parse(localStorage.getItem('dl_state_v2') || '{}');
+    const prefix = mod + '_';
+    let answered = 0, correct = 0;
+    for(const k in state.quizzes || {}) {
+      if(k.startsWith(prefix) && state.quizzes[k]?.answered) {
+        answered++;
+        if(state.quizzes[k].correct) correct++;
+      }
+    }
+    // Exclude meta entries like recs_dismissed
+    if(state.quizzes?.[mod+'_recs_dismissed']?.answered) answered--;
+    const total = 10;
+    const accuracy = answered ? correct / answered : 0;
+    const pct = total ? Math.min(Math.round(answered / total * 100), 100) : 0;
     const level = this.state.levels?.[mod] || 1;
-    const pct = stats.total ? Math.min(Math.round(stats.answered/stats.total*100),100) : 0;
     const bar = document.getElementById(mod+'-progress-bar');
     const txt = document.getElementById(mod+'-progress-text');
     const lvl = document.getElementById(mod+'-level');
     const acc = document.getElementById(mod+'-accuracy');
     const badge = document.getElementById('level-badge-'+mod);
     if(bar) bar.style.width = pct+'%';
-    if(txt) txt.textContent = stats.answered + ' / ' + stats.total;
+    if(txt) txt.textContent = answered + ' / ' + total;
     if(lvl) lvl.textContent = level;
     if(badge) badge.textContent = 'Level ' + level;
-    if(acc) acc.textContent = 'Precision: ' + (stats.accuracy ? Math.round(stats.accuracy*100)+'%' : '--');
+    if(acc) acc.textContent = 'Precision: ' + (accuracy ? Math.round(accuracy*100)+'%' : '--');
     // Nav badge
     const navBadge = document.getElementById('nav-badge-'+mod);
     if(navBadge) {
-      const remaining = stats.total - stats.answered;
-      if(remaining > 0 && stats.answered > 0) { navBadge.textContent = remaining; navBadge.style.display='inline-block'; }
+      const remaining = total - answered;
+      if(remaining > 0 && answered > 0) { navBadge.textContent = remaining; navBadge.style.display='inline-block'; }
       else navBadge.style.display='none';
     }
   },

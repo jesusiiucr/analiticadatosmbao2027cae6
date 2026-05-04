@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head><title>Migration Test</title></head>
+<body>
+<h1>Setting legacy ad_state...</h1>
+<script>
+const legacyState = {
+  quizzes: {
+    'mod1_0': {answered: true, choice: 2, correct: true, timeSpent: 15},
+    'mod1_1': {answered: true, choice: 1, correct: false, timeSpent: 22},
+    'mod1_2': {answered: true, choice: 0, correct: true, timeSpent: 8},
+    'mod1_3': {answered: true, choice: 3, correct: true, timeSpent: 12},
+    'mod1_4': {answered: true, choice: 0, correct: false, timeSpent: 30},
+  },
+  quizSets: {
+    mod1: [0,1,2,3,4,5,6,7,8,9]
+  },
+  time: 3600,
+  visits: 5,
+  detectedCountries: ['Costa Rica', 'Panama'],
+  globalStats: {avgScore: 7.5, uniqueUsers: 3},
+  ipInfo: {ip: '1.2.3.4', country: 'Costa Rica'}
+};
+localStorage.setItem('ad_state', JSON.stringify(legacyState));
+localStorage.removeItem('dl_state_v2');
+document.body.innerHTML += '<p>ad_state set. Redirecting...</p>';
+setTimeout(() => { window.location.href = 'index.html'; }, 500);
+</script>
+</body>
+</html>
